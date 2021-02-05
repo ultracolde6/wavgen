@@ -1,15 +1,15 @@
 """ Here contained is the ``Card`` class.
 """
 ## For Card Control ##
-from spectrum import *
+from .spectrum import *
 ## For Cam Control ##
 from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint
-from waveform import Superposition
-from constants import *
+from .utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint
+from .waveform import Superposition
+from .constants import *
 ## Other ##
 from math import ceil, sqrt
 import sys
@@ -88,7 +88,7 @@ class Card:
             print('Defaulting to Ch1 only.')
             ch0 = False
 
-        assert 80 <= amplitude <= (1000 if use_filter else 300), "Amplitude must within interval: [80 - 2000]"
+        assert 80 <= amplitude <= (1000 if use_filter else 400), "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)

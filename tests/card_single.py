@@ -14,19 +14,19 @@ if __name__ == '__main__':
         AB = from_file(filename, 'AB')
     else:
         ## Define Waveform parameters ##
-        ntraps = 5
+        ntraps = 2
         freq_A = [100E6 + j * 1E6 for j in range(ntraps)]
         phases = rp[:ntraps]
 
         ## Construct 2 Superposition objects & a Sweep ##
         A = Superposition(freq_A, phases=phases[:len(freq_A)])  # One via the default constructor...
         B = even_spacing(ntraps, int(102E6), int(2E6), phases=phases)  # ...the other with a useful constructor wrapper helper
-        AB = Sweep(A, B, sweep_time=1000)
+        # AB = Sweep(A, B, sweep_time=1000)
 
         ## Compute all the Sample Points ##
         A.compute_waveform(filename, 'A')
         B.compute_waveform(filename, 'B')
-        AB.compute_waveform(filename, 'AB')
+        # AB.compute_waveform(filename, 'AB')
 
     ## Set up the Card ##
     dwCard = Card()
@@ -36,11 +36,11 @@ if __name__ == '__main__':
     dwCard.load_waveforms(A)
     dwCard.wiggle_output()
 
-    dwCard.load_waveforms(AB)
-    dwCard.wiggle_output()
+    # dwCard.load_waveforms(AB)
+    # dwCard.wiggle_output()
 
-    dwCard.setup_channels(900, use_filter=True)  # Demonstrates how the filter reduces power by 88%
-    dwCard.load_waveforms(B)                     # Notice how the increased amplitude exactly compensates the reduction
-    dwCard.wiggle_output()
+    # dwCard.setup_channels(900, use_filter=True)  # Demonstrates how the filter reduces power by 88%
+    # dwCard.load_waveforms(B)                     # Notice how the increased amplitude exactly compensates the reduction
+    # dwCard.wiggle_output()
 
     print("Done!")

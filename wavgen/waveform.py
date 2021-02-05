@@ -1,9 +1,9 @@
 from math import pi, sin, cosh, log
-from waveform_base import Waveform
-from utilities import Wave
+from .waveform_base import Waveform
+from .utilities import Wave
 from easygui import msgbox
 from sys import maxsize
-from constants import *
+from .constants import *
 from math import inf
 import numpy as np
 import random
@@ -59,6 +59,9 @@ class Superposition(Waveform):
                     f = f // 10
                     digits += 1
                 lcm = min(digits, lcm)
+                """
+                + 1
+                """
             sample_length = (SAMP_FREQ / 10**lcm) * 32 * REPEAT
             msg = "Waveform will not be an integer # of periods.\nYou may want to calculate a sample length manually"
         if sample_length % 1:
