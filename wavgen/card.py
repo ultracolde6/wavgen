@@ -300,7 +300,7 @@ class Card:
             print("Stopping card.")
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
-    def stabilize_intensity(self, wav, cam=None, which_cam=None):
+    def stabilize_intensity(self, wav, cam=None, which_cam=0):
         """ Balances power across traps.
 
         Applies an iterative update to the magnitude vector
