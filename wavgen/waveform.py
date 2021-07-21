@@ -52,6 +52,9 @@ class Superposition(Waveform):
 
         ## Find the LeastCommonMultiple ##
         if sample_length is None:
+            # sample_length = int(SAMP_FREQ * (2 - len(freqs) % 2)//10E6) * 32 * REPEAT *2 # Jacqie made this edit with 10e6 chosen randomly
+            # This edit did not work -- intensity jump seen between repetitions due (probably) to phase mis-match. -ED 2021-07-02
+
             lcm = inf
             for f in freqs:
                 digits = 0
@@ -250,7 +253,7 @@ class Sweep(Waveform):
             dfn_inc = (b.Frequency - a.Frequency) / (SAMP_FREQ * self.SampleLength)
 
             phi = a.Phase
-            phi_inc = (b.Phase - phi) / self.SampleLength
+            phi_inc = 0 # (b.Phase - phi) / self.SampleLength
 
             mag = a.Magnitude
             mag_inc = (b.Magnitude - mag) / self.SampleLength
@@ -289,6 +292,247 @@ class Sweep(Waveform):
 
         return cls(supA, supB, sample_length=sample_length)
 
+class Sweep1(Waveform):
+    """ Describes a waveform which smoothly modulates from one :class:`~wavgen.waveform.Superposition`
+    to another with specified hold times on either side of the sweep. Default ramp shape is linear, but there
+    are also quadratic and cubic options. All times are inputted in ms.
+
+    Attributes
+    ----------
+    WavesA, WavesB : list of :class:`~wavgen.utilities.Wave`
+        Basically full descriptions of 2 :class:`~wavgen.waveform.Superposition` objects;
+        i.e. 2 lists of pure tones, including each frequency, magnitude, & phase.
+    Damp : float
+        Expresses the *change in* :attr:`~wavgen.waveform.Waveform.Amplitude`
+        as the waveform modulates from initial to final configuration.
+
+    """
+    def __init__(self, config_a, config_b, hold_time_a = None, hold_time_b = 100, sweep_time=10.0, sample_length = 210E6, ramp = 'linear'):
+
+        assert isinstance(config_a, Superposition) and isinstance(config_b, Superposition)
+        assert len(config_a.Waves) == len(config_b.Waves)
+
+        if hold_time_a:
+            sample_length = int(SAMP_FREQ*(hold_time_a+sweep_time+hold_time_b)/1000)
+
+        self.WavesA = config_a.Waves
+        self.WavesB = config_b.Waves
+        self.Damp = (config_b.Amplitude / config_a.Amplitude - 1) / int(SAMP_FREQ*sweep_time/1000)
+        self.hold_time_a = hold_time_a
+        self.hold_time_b = hold_time_b
+        self.sweep_time = sweep_time
+        self.ramp = ramp
+
+        super().__init__(sample_length, max(config_a.Amplitude, config_b.Amplitude))
+
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength - p * DATA_MAX)
+        HoldTimeA = int(self.hold_time_a * SAMP_FREQ/1000)
+        SweepTime = int(self.sweep_time * SAMP_FREQ/1000)
+        waveform = np.empty(N, dtype=float)
+
+        ## For each Pure Tone ##
+        for j, (a, b) in enumerate(zip(self.WavesA, self.WavesB)):
+            f_a = a.Frequency / SAMP_FREQ  # Cycles/Sample
+            f_b = b.Frequency / SAMP_FREQ
+            dfn_inc = (b.Frequency - a.Frequency) / (SAMP_FREQ * SweepTime)
+
+            phi = a.Phase
+            phi_b = b.Phase
+            phi_inc = (b.Phase - phi) / SweepTime
+
+            mag = a.Magnitude
+            mag_inc = (b.Magnitude - mag) / SweepTime
+
+
+            ## Compute the Wave ##
+            if self.ramp == 'linear':
+                for i in range(N):
+                    n = i + p * DATA_MAX
+                    dfn = dfn_inc * (n-HoldTimeA)/2  # Sweep Frequency shift
+
+                    if n < HoldTimeA:
+                        waveform[i] += mag * sin(2 * pi * n * f_a) # + phi)
+                    if HoldTimeA <= n < HoldTimeA + SweepTime:
+                        waveform[i] += (1 + (n-HoldTimeA)*self.Damp) * (mag + (n-HoldTimeA) * mag_inc) * sin(2 * pi * (n-HoldTimeA) * (f_a + dfn) + 2 * pi * HoldTimeA * f_a) # + phi + (n-HoldTimeA) * phi_inc)
+                    if n >= HoldTimeA + SweepTime:
+                        waveform[i] += mag * sin(2 * pi * (n-HoldTimeA-SweepTime) * f_b + 2*pi*(f_a+dfn_inc*SweepTime/2)*SweepTime + 2*pi*f_a*HoldTimeA) #+ phi_b)
+            if self.ramp == 'quadratic':
+                for i in range(N):
+                    n = i + p * DATA_MAX
+                    b = 2*(f_b-f_a)/SweepTime**2 # acceleration magnitude
+
+                    if n < HoldTimeA:
+                        waveform[i] += mag * sin(2 * pi * n * f_a)
+                    if HoldTimeA <= n < HoldTimeA + SweepTime/2:
+                        waveform[i] += (1 + (n - HoldTimeA) * self.Damp) * (mag + (n - HoldTimeA) * mag_inc) * sin(2*pi*(f_a*(n-HoldTimeA)+b/3*(n-HoldTimeA)**3) + 2*pi*f_a*HoldTimeA)
+                    if HoldTimeA + SweepTime / 2 <= n < HoldTimeA + SweepTime:
+                        waveform[i] = np.sin(2 * pi * (f_a * (SweepTime / 2) + b / 3 * (SweepTime/ 2) ** 3) + 2 * pi * f_a * HoldTimeA + 2 * pi * ((f_b + f_a) / 2 * (n - HoldTimeA - SweepTime / 2) - b / 3 * (n - HoldTimeA - SweepTime / 2) ** 3 + b * SweepTime / 2 * (n - HoldTimeA - SweepTime / 2) ** 2))
+                    if n >= HoldTimeA + SweepTime:
+                        waveform[i] += mag * sin(2 * pi * f_b*(n-HoldTimeA-SweepTime)+2*pi*((f_b+f_a)*SweepTime/4-b/3*(SweepTime/2)**3+b*SweepTime/2*(SweepTime/2)**2) + 2*pi*(f_a*(SweepTime/2)+b/3*(SweepTime/2)**3)+2*np.pi*f_a*HoldTimeA)
+            if self.ramp == 'cubic':
+                for i in range(N):
+                    n = i + p * DATA_MAX
+                    a = (2 * f_a - 2 * f_b) / SweepTime ** 3
+                    b = (3 * f_b - 3 * f_a) / SweepTime ** 2
+
+                    if n < HoldTimeA:
+                        waveform[i] += mag * sin(2 * pi * n * f_a)
+                    if HoldTimeA <= n < HoldTimeA + SweepTime:
+                        waveform[i] += (1 + (n-HoldTimeA)*self.Damp) * (mag + (n-HoldTimeA) * mag_inc) * sin(2*pi*(a*(n-HoldTimeA)**4/4+b*(n-HoldTimeA)**3/3+f_a*(n-HoldTimeA)) + 2*np.pi*f_a*HoldTimeA)
+                    if n >= HoldTimeA + SweepTime:
+                        waveform[i] += mag * sin(2 * pi * (n-HoldTimeA-SweepTime) * f_b + 2*pi*(a*SweepTime**4/4+b*SweepTime**3/3+f_a*SweepTime) + 2*pi*f_a*HoldTimeA)
+
+        ## Send the results to Parent ##
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
+
+    def config_dset(self, dset):
+        ## Contents ##
+        dset.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
+        dset.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
+        dset.attrs.create('phasesA', data=np.array([w.Phase for w in self.WavesA]))
+
+        dset.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
+        dset.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
+        dset.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
+
+        dset.attrs.create('sample_length', data=self.SampleLength)
+
+        ## Table of Contents ##
+        dset.attrs.create('keys', data=['freqsA', 'magsA', 'phasesA', 'freqsB', 'magsB', 'phasesB', 'sample_length'])
+
+        return dset
+
+    @classmethod
+    def from_file(cls, **kwargs):
+        freqsA, magsA, phasesA, freqsB, magsB, phasesB, sample_length = kwargs.values()
+        supA = Superposition(freqsA, magsA, phasesA)
+        supB = Superposition(freqsB, magsB, phasesB)
+
+        return cls(supA, supB, sample_length=sample_length)
+
+class Sweep_loop(Waveform):
+    """ Sweeps back and forth between config_a and config_b a specified number of times (n_loops).
+    sweep_time indicates the time for one back-and-forth. You can also specify hold times at the beginning and end.
+    All times are inputted in ms.
+    """
+    def __init__(self, config_a, config_b, hold_time_1 = 0.0, hold_time_2 = 0.0, sweep_time=2.0, n_loops = 1, sample_length = None):
+
+        assert isinstance(config_a, Superposition) and isinstance(config_b, Superposition)
+        assert len(config_a.Waves) == len(config_b.Waves)
+
+        if hold_time_1:
+            sample_length = int(SAMP_FREQ*(hold_time_1+n_loops*sweep_time+hold_time_2)/1000)
+
+        self.WavesA = config_a.Waves
+        self.WavesB = config_b.Waves
+        self.Damp = (config_b.Amplitude / config_a.Amplitude - 1) / int(SAMP_FREQ*sweep_time/1000)
+        self.hold_time_1 = hold_time_1
+        self.hold_time_2 = hold_time_2
+        self.sweep_time = sweep_time
+        self.n_loops = n_loops
+
+        super().__init__(sample_length, max(config_a.Amplitude, config_b.Amplitude))
+
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength - p * DATA_MAX)
+        HoldTime1 = int(self.hold_time_1 * SAMP_FREQ/1000)
+        SweepTime = int(self.sweep_time * SAMP_FREQ/1000)
+        waveform = np.empty(N, dtype=float)
+
+        ## For each Pure Tone ##
+        for j, (a, b) in enumerate(zip(self.WavesA, self.WavesB)):
+            f_a = a.Frequency / SAMP_FREQ  # Cycles/Sample
+            f_b = b.Frequency / SAMP_FREQ
+            df = 2* (b.Frequency - a.Frequency) / (SAMP_FREQ * SweepTime) # one back-and-forth per sweep time
+
+            phi = a.Phase
+            phi_b = b.Phase
+            phi_inc = (b.Phase - phi) / SweepTime
+
+            mag = a.Magnitude
+            mag_inc = (b.Magnitude - mag) / SweepTime
+
+
+            ## Compute the Wave ##
+            for i in range(N):
+                n = i + p * DATA_MAX
+
+                if n < HoldTime1:
+                    waveform[i] = np.sin(2 * np.pi * f_a * n)
+                for j in range(self.n_loops):
+                    if HoldTime1 + j * SweepTime <= n < HoldTime1 + (j + 1 / 2) * SweepTime:
+                        waveform[i] = np.sin(2 * np.pi * (f_a + df * (n - HoldTime1 - j * SweepTime) / 2) * (
+                                    n - HoldTime1 - j * SweepTime) + 2 * np.pi * j * (
+                                                         f_b - df * (SweepTime / 2) / 2) * (
+                                                         SweepTime / 2) + 2 * np.pi * j * (
+                                                         f_a + df * (SweepTime / 2) / 2) * (
+                                                         SweepTime / 2) + 2 * np.pi * f_a * HoldTime1)
+                    if HoldTime1 + (j + 1 / 2) * SweepTime <= n < HoldTime1 + (j + 1) * SweepTime:
+                        waveform[i] = np.sin(2 * np.pi * (f_b - df * (n - HoldTime1 - (j + 1 / 2) * SweepTime) / 2) * (
+                                    n - HoldTime1 - (j + 1 / 2) * SweepTime) + 2 * np.pi * (
+                                                         f_a + df * (SweepTime / 2) / 2) * (
+                                                         SweepTime / 2) + 2 * np.pi * j * (
+                                                         f_b - df * (SweepTime / 2) / 2) * (
+                                                         SweepTime / 2) + 2 * np.pi * j * (
+                                                         f_a + df * (SweepTime / 2) / 2) * (
+                                                         SweepTime / 2) + 2 * np.pi * f_a * HoldTime1)
+                if HoldTime1 + self.n_loops * SweepTime <= n:
+                    waveform[i] = np.sin(2 * np.pi * f_a * (n - HoldTime1 - self.n_loops * SweepTime) + 2 * np.pi * (
+                                f_b - df * (SweepTime / 2) / 2) * (SweepTime / 2) + 2 * np.pi * (
+                                                     f_a + df * (SweepTime / 2) / 2) * (SweepTime / 2) + 2 * np.pi * (
+                                                     self.n_loops - 1) * (f_b - df * (SweepTime / 2) / 2) * (
+                                                     SweepTime / 2) + 2 * np.pi * (self.n_loops - 1) * (
+                                                     f_a + df * (SweepTime / 2) / 2) * (
+                                                     SweepTime / 2) + 2 * np.pi * f_a * HoldTime1)
+
+        ## Send the results to Parent ##
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
+
+    def config_dset(self, dset):
+        ## Contents ##
+        dset.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
+        dset.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
+        dset.attrs.create('phasesA', data=np.array([w.Phase for w in self.WavesA]))
+
+        dset.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
+        dset.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
+        dset.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
+
+        dset.attrs.create('sample_length', data=self.SampleLength)
+
+        ## Table of Contents ##
+        dset.attrs.create('keys', data=['freqsA', 'magsA', 'phasesA', 'freqsB', 'magsB', 'phasesB', 'sample_length'])
+
+        return dset
+
+    @classmethod
+    def from_file(cls, **kwargs):
+        freqsA, magsA, phasesA, freqsB, magsB, phasesB, sample_length = kwargs.values()
+        supA = Superposition(freqsA, magsA, phasesA)
+        supB = Superposition(freqsB, magsB, phasesB)
+
+        return cls(supA, supB, sample_length=sample_length)
+
+class LinearTest(Waveform):
+    def __init__(self):
+
+        sample_length = 2E5
+
+
+        super().__init__(sample_length)
+
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength - p * DATA_MAX)
+        waveform = np.empty(N, dtype=float)
+
+            ## Compute the Wave ##
+        for i in range(N):
+            n = i + p * DATA_MAX
+            waveform[i] = n/self.SampleLength
+
+        ## Send the results to Parent ##
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
 ######### HS1 Class #########
 class HS1(Waveform):

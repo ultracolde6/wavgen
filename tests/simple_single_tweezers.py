@@ -8,7 +8,7 @@ r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975
 
 if __name__=='__main__':
     ntraps = 1
-    startfreq = 120E6
+    startfreq = 100E6
     freq_A = [startfreq]
     # max_calibration
     # mag_A = [0.978,1,0.900,0.952,0.977]

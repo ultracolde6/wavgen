@@ -132,7 +132,7 @@ def from_file(filepath, datapath):
         :class:`~wavgen.waveform.Waveform`
             Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.
     """
-    classes = inspect.getmembers(sys.modules['waveform'], inspect.isclass)
+    classes = inspect.getmembers(sys.modules['wavgen.waveform'], inspect.isclass)
 
     filepath = os.path.splitext(filepath)[0] + '.h5'
 
@@ -559,6 +559,7 @@ def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
     for _ in range(iterations):
         image = cam.latest_frame()
         peak_vals, params0 = extract_peaks(which_cam, image, ntraps)
+        print(image)
 
         ## Fitting ##
         xdata = np.arange(image.shape[1])
@@ -569,7 +570,7 @@ def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
         except RuntimeError:
             plot_image(which_cam, image, ntraps, step_num, guess=True)
             return np.ones(ntraps)
-
+    print(popt)
     plot_image(which_cam, image, ntraps, step_num, popt)
     return np.multiply(trap_powers, 1/iterations)
 

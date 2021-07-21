@@ -7,10 +7,10 @@ r = [2.094510589860613, 5.172224588379723, 2.713365750754814, 2.7268654021553975
      9726252504, 2.058427862897829, 6.234202186024447, 5.665480185178818]
 
 if __name__=='__main__':
-    ntraps = 10
+    ntraps = 1
     # freq_A = [100E6 + j * 1E6 for j in range(ntraps)]
     # freq_A = [111e6, 112e6, 113e6, 114e6]
-    freq_A = [int(117e6)]
+    freq_A = [int(100e6)]
     A = wavgen.waveform.Superposition(freq_A)  # One via the default constructor...
     print(A)
     # A.set_phases(r[:len(freq_A)])

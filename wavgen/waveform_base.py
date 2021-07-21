@@ -8,6 +8,7 @@ from tqdm import tqdm
 from .constants import *
 import h5py
 import os
+import matplotlib.pyplot as plt
 
 
 ######### Waveform Class #########
@@ -152,7 +153,7 @@ class Waveform:
                 self._compute_waveform(wav, temp, cpus)
 
             F.flush()    # Flush all calculations to disk
-        os.remove('temp.h5')  # Remove the temporary
+        # os.remove('temp.h5')  # Remove the temporary
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
@@ -172,13 +173,21 @@ class Waveform:
         """
         if not self.Latest:
             self.compute_waveform()
+        # data = []
         with h5py.File(self.FilePath, 'r', libver='latest') as f:
             try:
+                # print('here')
                 buffer[()] = f.get(self.DataPath)[offset:offset + size]
             except TypeError:
+            # print('here2')
                 dat = f.get(self.DataPath)[offset:offset + size]
                 for i in range(size):
                     buffer[i] = dat[i]
+        # for i in range(size):
+        #     data.append(buffer[i])
+        # fig = plt.figure()
+        # plt.plot(data)
+        # plt.show()
 
         # buf[:] = f.get(self.DataPath)[offset:offset + len(buf)]
 

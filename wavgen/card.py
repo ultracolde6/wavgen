@@ -63,7 +63,7 @@ class Card:
 
     ################# PUBLIC FUNCTIONS #################
 
-    def setup_channels(self, amplitude=DEF_AMP, ch0=False, ch1=True, use_filter=False):
+    def setup_channels(self, amplitude=DEF_AMP, ch0=True, ch1=False, use_filter=False):
         """ Performs a Standard Initialization for designated Channels & Trigger.
 
         Parameters
@@ -109,6 +109,7 @@ class Card:
         spcm_dwSetParam_i32(self.hCard, SPC_CHENABLE,       CHAN)
 
         # spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK,    SPC_TMASK_SOFTWARE)
+
         # ## Necessary? Doesn't Hurt ##
         # spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ANDMASK,   0)
         # spcm_dwSetParam_i64(self.hCard, SPC_TRIG_DELAY,     int64(0))
@@ -118,7 +119,7 @@ class Card:
         self._error_check()
         self.ChanReady = True
 
-    def load_waveforms(self, wavs, offset=0):
+    def load_waveforms(self, wavs, offset=0, mode=None):
         """ Writes a set of waveforms as a single block to card.
 
         Note
@@ -134,10 +135,26 @@ class Card:
             by indicating where to begin writing (in bytes from the mem start).
             **You cannot exceed the set size of the pre-existing data**
         """
-        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_CONTINUOUS)  # Sets the mode
+        # spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_CONTINUOUS)  # Sets the mode
+        if mode == None:
+            spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SINGLE)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TM_NONE)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TMASK_EXT0)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_EXT0_LEVEL0, 1500)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_EXT0_MODE, SPC_TM_POS)
+        elif mode == 'replay':
+            spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SINGLERESTART)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TM_NONE)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_ORMASK, SPC_TMASK_EXT0)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_EXT0_LEVEL0, 1500)
+            spcm_dwSetParam_i32(self.hCard, SPC_TRIG_EXT0_MODE, SPC_TM_POS)
+        elif mode == 'continuous':
+            spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_CONTINUOUS)
+
         ## Sets channels to default mode if no user setting ##
         if not self.ChanReady:
             self.setup_channels()
+
 
         ## Saves single waveforms for optimization functions ##
         if not isinstance(wavs, list) or len(wavs) == 1:
@@ -154,8 +171,15 @@ class Card:
         else:
             spcm_dwSetParam_i64(self.hCard, SPC_MEMSIZE, int64(sample_length))
 
+        # spcm_dwSetParam_i64(self.hCard, SPC_LOOPS, int64(5000))
+        #ALERT: I do not think this SPC_LOOPS setting should be there!!!#
+
+
         ## Sets up a local Software Buffer then Transfers to Board ##
-        pv_buf = pvAllocMemPageAligned(NUMPY_MAX * 2)  # Allocates space on PC
+        pv_buf = pvAllocMemPageAligned(NUMPY_MAX*2)  # Allocates space on PC
+        #ALERT changed above line to below
+        # pv_buf = pvAllocMemPageAligned(sample_length*2)
+
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
 
         self._write_segment(wavs, pv_buf, pn_buf, offset)
@@ -261,21 +285,45 @@ class Card:
             else:  # Check for Invalid Option
                 assert duration is None, "Invalid input for steps"
             verboseprint("Looping Signal for ", msg)
+        a=int32()
+        # spcm_dwGetParam_i32(self.hCard,SPC_PCISERIALNO,byref(a))
+        # verboseprint(a.value)
+        # verboseprint('trig', a.value)
 
         ## Sets blocking command appropriately ##
-        WAIT = M2CMD_CARD_WAITREADY if (duration and block and cam is None) else 0
+
+        WAIT = M2CMD_CARD_WAITTRIGGER if (duration and block and cam is None) else 0
+        # verboseprint('wait',WAIT)
+        # WAIT = M2CMD_CARD_WAITTRIGGER
+        # WAIT = 0
+
+
+
+        # verboseprint(spcm_dwGetParam_i32(self.hCard,SPC_TRIG_AVAILORMASK))
+
 
         ## Start card, try again if clock-not-locked ##
-        dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
+        spcm_dwSetParam_i32(self.hCard, SPC_TIMEOUT, int(15000))
+        dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START) # | M2CMD_CARD_ENABLETRIGGER | WAIT)
         count = 0
         while dwError == ERR_CLOCKNOTLOCKED:
             verboseprint("Clock not Locked, giving it a moment to adjust...")
             count += 1
             sleep(0.1)
             self._error_check(halt=False, print_err=False)
-            dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER | WAIT)
+            dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_START) #| M2CMD_CARD_ENABLETRIGGER | WAIT)
             if count == 10:
+                verboseprint('count 10')
                 break
+        verboseprint('Clock Locked')
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_ENABLETRIGGER)
+        verboseprint('TriggerEnabled')
+
+        trigResult=spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_WAITTRIGGER)
+        if (spcm_dwSetParam_i32(self.hCard,SPC_M2CMD,M2CMD_CARD_WAITTRIGGER)==ERR_TIMEOUT):
+            verboseprint("no trigger detected, force trigger now!")
+            spcm_dwSetParam_i32(self.hCard,SPC_M2CMD,M2CMD_CARD_FORCETRIGGER)
+
 
         ## Special Cases GUI/blocking ##
         if cam is not None:       # GUI Mode
@@ -333,10 +381,12 @@ class Card:
         assert isinstance(wav, Superposition), "Only Superpositions of pure tones can be optimized!"
 
         if cam is None:  # If we're not in GUI mode
-            cam = self._run_cam()  # Retrieves a cam
-            which_cam = 0
             self.load_waveforms(wav)
-            self.wiggle_output(block=False)  # Outputs the given wave
+            self.wiggle_output(block=False)
+            cam = self._run_cam(which_cam=which_cam)  # Retrieves a cam
+            which_cam = 0
+            print('hello>')
+  # Outputs the given wave
 
         L = 0.2  # Correction Rate
         mags = wav.get_magnitudes()
@@ -485,22 +535,32 @@ class Card:
             Passed from :meth:`load_waveforms`, see description there.
         """
         total_so_far = offset
+        start = time()
         for wav in wavs:
-            size = wav.SampleLength
+            size = min(wav.SampleLength, NUMPY_MAX) #ALERT: changed to 2e9 just to be big.. should set another limit
             so_far = 0
-            for n in range(ceil(size / NUMPY_MAX)):
-                ## Decides chunk size & loads wave data to PC buffer ##
-                seg_size_part = min(NUMPY_MAX, size - n * NUMPY_MAX)
-                wav.load(pn_buf, so_far, seg_size_part)  # Fills the Buffer
-
-                ## Do a Transfer to Board ##
-                spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf,
-                                       uint64(total_so_far), uint64(seg_size_part*2))
-                spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
-
-                ## Track transfer progress ##
-                so_far += seg_size_part
-                total_so_far += seg_size_part
+            spcm_dwInvalidateBuf(self.hCard, SPCM_BUF_DATA)
+            wav.load(pn_buf,0,size)
+            spcm_dwDefTransfer_i64(self.hCard,SPCM_BUF_DATA,SPCM_DIR_PCTOCARD,int32(0),pv_buf,uint64(0),uint64(size*2))
+            dwError = spcm_dwSetParam_i32(self.hCard, SPC_M2CMD,M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        #     for n in range(ceil(size / NUMPY_MAX)):
+        #         ## Decides chunk size & loads wave data to PC buffer ##
+        #         seg_size_part = min(NUMPY_MAX, size - n * NUMPY_MAX)
+        #         wav.load(pn_buf, so_far, seg_size_part)  # Fills the Buffer
+        #
+        #         verboseprint('seg',n)
+        #         ## Do a Transfer to Board ##
+        #
+        #         spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), pv_buf,
+        #                                uint64(total_so_far), uint64(seg_size_part*2))
+        #         # spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pv_buf,
+        #         #                        uint64(total_so_far), uint64(seg_size_part*2))
+        #         dwError = spcm_dwSetParam_i32(self.hCard,SPC_M2CMD,M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+        #         # verboseprint(dwError)
+        #         ## Track transfer progress ##
+        #         so_far += seg_size_part
+        #         total_so_far += seg_size_part
+        # # verboseprint(time()-start)
 
     def _transfer_steps(self, steps):
         """ Writes all sequence steps passed, potentially overwriting.
@@ -533,7 +593,9 @@ class Card:
     def _setup_clock(self):
         """ Tries to achieve requested sampling frequency (see global parameter :data:`~wavgen.config.SAMP_FREQ`)
         """
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)  # Sets out internal Quarts Clock For Sampling
+        # spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_INTPLL)# Sets out internal Quarts Clock For Sampling
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_EXTREFCLOCK)
+        spcm_dwSetParam_i32(self.hCard, SPC_REFERENCECLOCK, 10000000)
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
         check_clock = int64(0)
