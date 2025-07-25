@@ -1,0 +1,350 @@
+from math import pi, sin, cosh, log
+from .waveform_base import Waveform
+from wavgen.waveform import Superposition, Sweep1, Sweep_sequence, Sweep_loop
+from .utilities import Wave
+from easygui import msgbox
+from sys import maxsize
+from .constants import *
+from math import inf
+import numpy as np
+import random
+import h5py
+from wavgen.utilities import *
+from scipy import signal
+
+
+
+
+class SingleJiggle(Waveform):
+    # """ A simple single trap configuration that is Sinusodally modulated.
+    #
+    # Attributes
+    # ----------
+    # Waves : list of :class:`~wavgen.utilities.Wave`
+    #     The list of composing pure tones. Each object holds a frequency,
+    #     magnitude, and relative phase.
+    #
+    # Hint
+    # ----
+    # There are now 3 relevant **amplitudes** here:
+    # :meth:`Output Voltage Limit <wavgen.card.Card.setup_channels>`,
+    # :attr:`Waveform Amplitude <wavgen.waveform.Waveform.Amplitude>`, & the
+    # :attr:`amplitudes of each pure tone <wavgen.utilities.Wave.Magnitude>`
+    # composing a superposition. Each one is expressed as a fraction of the previous.
+    #
+    # See Also
+    # --------
+    # """
+
+    def __init__(self, base_freq, mod_freq, mod_amp, mod_form, base_phase=0, mod_phase=0, sample_length=None, amp=1.0):
+        """
+        Provides several options for defining waveform duration.
+        Parameters
+        ----------
+        base_freq :  int, in units of Hz
+
+        mod_freq : int, in units of Hz
+
+        mod_amp : float, in units of Hz, so the phase modulation amplitude is actually (mod_amp/mod_freq)
+
+        base_phase:  float, optional
+            base tone initial phase, defualts to be 0
+
+        sample_length : int, optional
+            Length of waveform in samples.
+
+        amp : float, optional
+            Amplitude of waveform relative to maximum output voltage.
+        """
+        self.Mod_form = mod_form
+        self.Base_freq = base_freq
+        self.Mod_freq = mod_freq
+        self.Mod_amp = mod_amp
+        self.Base_phase = base_phase
+        self.Mod_phase = mod_phase
+
+        ## Find the LeastCommonMultiple ##
+        if sample_length is None:
+            # sample_length = int(SAMP_FREQ * (2 - len(freqs) % 2)//10E6) * 32 * REPEAT *2 # Jacqie made this edit with 10e6 chosen randomly
+            # This edit did not work -- intensity jump seen between repetitions due (probably) to phase mis-match. -ED 2021-07-02
+
+            lcm = inf
+            for f in [base_freq, mod_freq]:
+                digits = 0
+                while f%10 == 0:
+                    f = f // 10
+                    digits += 1
+                lcm = min(digits, lcm)
+                """
+                + 1
+                """
+            print(lcm)
+            # Leon: this base 10 lcm thing doesn't look like the optimal shortest waveform. Will leave it for now.
+            sample_length = (SAMP_FREQ / 10**lcm) * 32 * REPEAT
+            print(sample_length)
+            while sample_length < 384:
+                sample_length += sample_length
+            msg = "Waveform will not be an integer # of periods.\nYou may want to calculate a sample length manually"
+        if sample_length % 1:
+            msgbox(msg, "Warning")
+        else:
+            sample_length = int(sample_length)
+
+
+        assert mod_freq >= SAMP_FREQ/sample_length, "Modulation Frequency is below resolution. Increase sample length."
+        assert base_freq < SAMP_FREQ / 2, ("Frequency %d must below Nyquist: %d" % (base_freq, SAMP_FREQ / 2))
+
+        ## Initialize ##
+        super().__init__(sample_length, amp)
+
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+        waveform = np.zeros(N, dtype=float)
+
+        f0 = self.Base_freq / SAMP_FREQ # Cycles/Sample
+        phi0 = self.Base_phase
+        mag0 = 1
+
+        f1 = self.Mod_freq / SAMP_FREQ # Cycles/Sample
+        phi1 = self.Mod_phase
+
+        mag1 = self.Mod_amp/self.Mod_freq
+        # print('________________________')
+        # print([self.Mod_amp,self.Mod_freq])
+        # print('________________________')
+        # # print([f0,mag0,phi0,f1,mag1,phi1])
+
+        mod_form = self.Mod_form
+
+        ## Compute the Wave ##
+        for i in range(N):
+            n = i + p*DATA_MAX
+            if mod_form == "Sine":
+                waveform[i] += mag0 * sin(2*pi*f0 * n + phi0 + mag1* sin(2*pi*f1 * n + phi1))
+            if mod_form == "Toggle":
+                waveform[i] += mag0 * sin(2*pi*f0 * n + phi0 + np.pi/2 *mag1* signal.sawtooth(2*pi*f1 * n, 0.5))
+
+        ## Send the results to Parent ##
+        # print(f'max = {max(waveform.max(), abs(waveform.min()))}')
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
+        # return max(waveform.max(), abs(waveform.min()))
+
+
+    def config_dset(self, dset):
+        ## Contents ##
+        dset.attrs.create('base_freqs', data=np.array([self.Base_freq]))
+        dset.attrs.create('mod_freqs', data=np.array([self.Mod_freq]))
+        dset.attrs.create('mod_amps', data=np.array([self.Mod_amp]))
+        dset.attrs.create('base_phase', data=np.array([self.Base_phase]))
+        dset.attrs.create('mod_phase', data=np.array([self.Mod_freq]))
+        ## Table of Contents ##
+        dset.attrs.create('keys', data=['base_freqs','mod_freqs','mod_amps','base_phase','mod_phase', 'sample_length'])
+
+        return dset
+
+
+
+class SuperpositionJiggle(Waveform):
+    """ A partially static, partially jiggling trap configuration.
+
+    Attributes
+    ----------
+
+    Jiggle_Waves : list of :class:`~wavgen.utilities.JiggleWave`
+        The list of modulated pure tones. Each object holds a carrier frequency,
+        carrier magnitude, and carrier phase,
+        as well as a modulation frequency, carrier magnitude, and carrier phase
+
+    Hint
+    ----
+    There are now 3 relevant **amplitudes** here:
+    :meth:`Output Voltage Limit <wavgen.card.Card.setup_channels>`,
+    :attr:`Waveform Amplitude <wavgen.waveform.Waveform.Amplitude>`, & the
+    :attr:`amplitudes of each pure tone <wavgen.utilities.Wave.Magnitude>`
+    composing a superposition. Each one is expressed as a fraction of the previous.
+
+    """
+    def __init__(self, base_freqs, mod_freqs=None, base_amps=None, mod_amps=None, base_phases=None, mod_phases=None, mod_forms=None, sample_length=None, amp=1.0):
+        """ Provides several options for defining waveform duration.
+
+        Parameters
+        ----------
+        base_freqs :  list of int, in units of Hz
+
+        mod_freqs : list of int, in units of Hz
+
+        mod_amps : list of float, in units of Hz, so the phase modulation amplitude is actually (mod_amp/mod_freq)
+
+        base_phases:  list of float, optional
+            base tone initial phase, defualts to be 0
+            ...
+        sample_length : int, optional
+            Length of waveform in samples.
+        amp : float, optional
+            Amplitude of waveform relative to maximum output voltage.
+        """
+        # base_freqs.sort()
+
+        ## Applies passed Magnitudes or Phases ##
+        if mod_freqs is None:
+            mod_freqs = np.zeros(len(base_freqs))
+        if base_amps is None:
+            base_amps = np.ones(len(base_freqs))
+        if mod_amps is None:
+            mod_amps = np.zeros(len(base_freqs))
+        if base_phases is None:
+            # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            base_phases = np.zeros(len(base_freqs))
+        if mod_phases is None:
+            mod_phases = np.zeros(len(base_freqs))
+        if mod_forms is None:
+            mod_forms = np.empty(len(base_freqs), dtype='object')
+            mod_forms[:] = "Off"
+
+        for ii, form in enumerate(mod_forms):
+            if form == "Off":
+                mod_amps[ii] = 0
+                mod_freqs[ii] = 0
+                mod_phases[ii] = 0
+
+        f_array = np.concatenate((base_freqs, mod_freqs))
+        f_array = f_array[np.nonzero(f_array)]
+
+        ## Find the LeastCommonMultiple ##
+        if sample_length is None:
+
+            lcm = inf
+            for f in f_array:
+                digits = 0
+                while f%10 == 0 and digits<100:
+                    f = f // 10
+                    digits += 1
+                lcm = min(digits, lcm)
+                """
+                + 1
+                """
+            sample_length = (SAMP_FREQ / 10**lcm) * 32 * REPEAT
+            print(sample_length)
+            while sample_length < 384:
+                sample_length += sample_length
+            msg = "Waveform will not be an integer # of periods.\nYou may want to calculate a sample length manually"
+        if sample_length % 1:
+            msgbox(msg, "Warning")
+        else:
+            sample_length = int(sample_length)
+
+
+
+        assert np.min(f_array) >= SAMP_FREQ/sample_length, "Frequency is below resolution. Increase sample length."
+        assert np.max(f_array) < SAMP_FREQ / 2, ("Frequency %d must below Nyquist: %d" % (np.max(f_array), SAMP_FREQ / 2))
+        assert len(base_amps) == len(base_freqs) == len(base_phases)==len(mod_amps) == len(mod_freqs) == len(mod_phases) == len(mod_forms), "Parameter size mismatch!"
+
+        ## Initialize ##
+        self.JiggleWaves = [JiggleWave(bf, ba, bp, mf, ma, mp) for bf, ba, bp, mf, ma, mp in zip(base_freqs, base_amps, base_phases, mod_freqs, mod_amps, mod_phases)]
+        self.JiggleForms = mod_forms
+        super().__init__(sample_length, amp)
+
+    def compute(self, p, q):
+        N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
+        waveform = np.zeros(N, dtype=float)
+
+        ## For each Pure Tone ##
+        for j, w in enumerate(self.JiggleWaves):
+            mod_form = self.JiggleForms[j]
+            f0 = w.BaseFrequency / SAMP_FREQ
+            phi0 = w.BasePhase
+            mag0 = w.BaseMagnitude
+            f1 = w.ModFrequency / SAMP_FREQ
+            phi1 = w.ModPhase
+            if w.ModFrequency != 0:
+                mag1 = w.ModMagnitude/w.ModFrequency
+            else:
+                mag1 = 0
+            ## Compute the Wave ##
+            for i in range(N):
+                n = i + p * DATA_MAX
+                if mod_form == "Off":
+                    waveform[i] += mag0 * sin(2 * pi * f0 * n + phi0 )
+                if mod_form == "Sine":
+                    waveform[i] += mag0 * sin(2 * pi * f0 * n + phi0 + mag1 * sin(2 * pi * f1 * n + phi1))
+                if mod_form == "Toggle":
+                    waveform[i] += mag0 * sin(
+                        2 * pi * f0 * n + phi0 + np.pi/2 * mag1 * signal.sawtooth(2 * pi * f1 * n + phi1, 0.5))
+
+
+        ## Send the results to Parent ##
+        # print(f'max = {max(waveform.max(), abs(waveform.min()))}')
+        q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
+        # return max(waveform.max(), abs(waveform.min()))
+
+
+    def config_dset(self, dset):
+        ## Contents ##
+        dset.attrs.create('base_freqs', data=np.array([w.BaseFrequency for w in self.JiggleWaves]))
+        dset.attrs.create('base_mags', data=np.array([w.BaseMagnitude for w in self.JiggleWaves]))
+        dset.attrs.create('base_phases', data=np.array([w.BasePhase for w in self.JiggleWaves]))
+        dset.attrs.create('mod_freqs', data=np.array([w.ModFrequency for w in self.JiggleWaves]))
+        dset.attrs.create('mod_mags', data=np.array([w.ModMagnitude for w in self.JiggleWaves]))
+        dset.attrs.create('mod_phases', data=np.array([w.ModPhase for w in self.JiggleWaves]))
+        dset.attrs.create('mod_forms', data=np.array(self.JiggleForms))
+        dset.attrs.create('sample_length', data=self.SampleLength)
+
+        ## Table of Contents ##
+        dset.attrs.create('keys', data=['base_freqs', 'base_mags', 'base_phases', 'mod_freqs', 'mod_mags', 'mod_phases', 'mod_forms', 'sample_length'])
+
+        return dset
+    #
+
+    @classmethod
+    def from_file(cls, **kwargs):
+        base_freqs, mod_freqs, base_amps, mod_amps, base_phases, mod_phases, mod_forms, sample_length = kwargs.values()
+        supA = SuperpositionJiggle(base_freqs)
+        # supB = Superposition(freqsB, magsB, phasesB)
+
+        return cls(supA, sample_length=sample_length)
+
+    # def get_magnitudes(self):
+    #     """
+    #     Returns
+    #     -------
+    #     list of float
+    #         Value of :attr:`~wavgen.utilities.Wave.Magnitude` for each pure tone,
+    #         in order of increasing frequency.
+    #     """
+    #     return [w.Magnitude for w in self.Waves]
+    #
+    # def set_magnitudes(self, mags):
+    #     """ Sets the :attr:`~wavgen.utilities.Wave.Magnitude` of each pure tone.
+    #
+    #     Parameters
+    #     ----------
+    #     mags : list of float
+    #         Each new magnitude, limited to (**[0, 1]**), ordered by ascending frequency).
+    #     """
+    #     for w, mag in zip(self.Waves, mags):
+    #         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
+    #         w.Magnitude = mag
+    #     self.Latest = False
+    #
+    # def get_phases(self):
+    #     return [w.Phase for w in self.Waves]
+    #
+    # def set_phases(self, phases):
+    #     """ Sets the relative phase of each pure tone.
+    #
+    #     Parameters
+    #     ----------
+    #     phases : list of float
+    #         New phases, expressed as (**radians**), ordered by ascending frequency.
+    #
+    #     """
+    #     for w, phase in zip(self.Waves, phases):
+    #         w.Phase = phase
+    #     self.Latest = False
+    #
+    # def randomize(self):
+    #     """ Randomizes each pure tone's phase.
+    #     """
+    #     for w in self.Waves:
+    #         w.Phase = 2*pi*random.random()
+    #     self.Latest = False

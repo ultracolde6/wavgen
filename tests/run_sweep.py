@@ -3,7 +3,7 @@ from wavgen import utilities
 import os
 
 if __name__ == '__main__':
-    filename = 'sweep_(92_94)-(92_100)_100-3-100'
+    filename = 'sweep_loop_92-102_100-2ms_x1-100_quad'
     # filename = 'sweep_92-102_100-1-100_cubic'
     # If we have already computed the Waveforms...
     if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.

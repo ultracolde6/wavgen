@@ -57,7 +57,9 @@ class Waveform:
         """
         if sample_length % 32:
             verboseprint("Sample length is being truncated to align with 32 samples.")
+        # print(sample_length)
         self.SampleLength = int(sample_length - sample_length % 32)
+        # print(self.SampleLength)
         self.Amplitude    = amp
         self.PlotObjects  = []
         self.Latest       = False
@@ -118,6 +120,10 @@ class Waveform:
     def from_file(cls, **kwargs):
         return cls(**kwargs)
 
+    @classmethod
+    def from_file_simple(cls, **kwargs):
+        return cls(**kwargs)
+
     def compute_waveform(self, filepath=False, datapath=False, cpus=None):
         """
         Computes the waveform to disk.
@@ -150,14 +156,14 @@ class Waveform:
 
             with h5py.File('temp.h5', 'w', libver='latest') as T:
                 temp = T.create_dataset('waveform', shape=(self.SampleLength,), dtype=float)
-                self._compute_waveform(wav, temp, cpus)
+                a = self._compute_waveform(wav, temp, cpus)
 
             F.flush()    # Flush all calculations to disk
         # os.remove('temp.h5')  # Remove the temporary
 
         ## Wrapping things Up ##
         self.Latest = True  # Will be up to date after
-
+        return a
     def load(self, buffer, offset, size):
         """
         Loads a portion of the waveform.
@@ -177,6 +183,8 @@ class Waveform:
         with h5py.File(self.FilePath, 'r', libver='latest') as f:
             try:
                 # print('here')
+                # print(offset)
+                # print(size)
                 buffer[()] = f.get(self.DataPath)[offset:offset + size]
             except TypeError:
             # print('here2')
@@ -224,9 +232,49 @@ class Waveform:
 
         ## Compute the Waveform ##
         max_val = self._parallelize(temp, self.compute, cpus)
+        # print(f'max val = {max_val}')
 
         ## Calculate Normalization Factor ##
-        norm = (SAMP_VAL_MAX * self.Amplitude) / max_val
+        # norm = (SAMP_VAL_MAX * self.Amplitude) / max_val
+        # norm =  1853.1916706522684 # 10/22/2023: for waveforms_160_40Twz_5,5lambda_v2; 0.72E6;  89.6E6
+        # norm =  1853.1916706522684 # 10/22/2023: for waveforms_160_40Twz_4,5lambda_v2; 0.72E6;  89.6E6
+        # norm = 1901.7220294766691 # 50 tweezers
+        # norm = 2913.7973463175485
+        # norm = 3279.96686182931
+        # norm = 3211.856538253453
+        # norm = 3043.6572962677624 # use this for waveforms_160us_v2
+        # norm = 3349.544287767873 # for waveforms_160us_5lambda
+        # norm = 4541.391788789322 # for waveforms_160_5lambda_v1
+        # norm = 4473.051579456575 # for waveforms_160_5lambda_v2
+        # norm = 4889.24796343909 # for waveforms_160_5lambda_v3
+        # norm = 4860.225018102321 # for waveforms_160_5lambda_v4
+        # norm = 5549.998955280359 # for waveforms_160_8Twz_4lambda_v1
+
+        # norm = 2875.844459572942 # for waveforms_160_16Twz_4lambda_v1
+        # norm = 2903.6740088472557 # for waveforms_160_16Twz_3,5lambda
+        # norm = 2935.414511931181 # waveforms_160_16Twz_5,5lambda
+        # norm = 3146.6123462670444 # for waveforms_320_16Twz_4lambda_v1
+        # norm = 3108.686788474663 # for waveforms_160_16Twz_4lambda_v2
+        # norm = 3023.6277586084243 # for waveforms_160_16Twz_5,5lambda_v1
+        # norm = 2778.362737679424 # for waveforms_160_16Twz_5,5lambda_v2
+        # norm = 2822.362984116139 # waveforms_160_16Twz_4lambda_v3
+        # norm = 2861.1238613259757 # waveforms_160_16Twz_5lambda
+        # norm = 1998.8758446874072 # waveforms_160_30Twz_5lambda
+        # norm = 3345.727380571959 # waveforms_160_16Twz_1MHz
+        # norm = 3548.4260981477737 # waveforms_160_16Twz_5lambda_v1
+        # norm = 3643.160262123701 # waveforms_160_16Twz_5,5lambda_v3
+        # norm = 3257.9421980055795 # 5lambda_v2
+        # norm = 1722.857036876052 # 41twz_0,75MHz
+        # norm = 2121.6211080626194 # 38twz_5lambda
+        # norm = 2213.5579202456956 #40twz_5lambda
+        # norm = 2179.192717236717 # 30twz_5_lambda_v1
+        # norm = 2561.048684459194 # 40twz_4,5lambda
+        # norm = 2010.6261542521925 # 40twz_5,5lambda_v3
+        norm = 1853.1916706522684 #40twz_5lambda_v2
+        # norm = 1600 # test on 2/25/2024
+        print(f'norm = {norm}')
+        # print(f'max_val = {max_val}')
+        # print(f'self.Amplitude = {self.Amplitude}')
 
         ## Then Normalize ##
         try:
@@ -241,6 +289,7 @@ class Waveform:
         ## Wrapping things Up ##
         bytes_per_sec = self.SampleLength * 2 // (time() - start_time)
         print("\tAverage Rate: %d bytes/second" % bytes_per_sec)
+        return max_val
 
     def _parallelize(self, buffer, func, cpus):
         ## Number of Parallel Processes ##
@@ -261,7 +310,9 @@ class Waveform:
         for p in tqdm(range(N)):
             n, data, cur_max_val = q.get()  # Collects a Result
 
+            # print(f'cur_max_val = {cur_max_val}')
             max_val = max(cur_max_val, max_val)  # Tracks the result's greatest absolute value
+            # print(f'max_val = {max_val}')
 
             i = n * DATA_MAX  # Shifts to Proper Interval
 

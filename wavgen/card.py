@@ -7,7 +7,7 @@ from instrumental import instrument, u
 import matplotlib.animation as animation
 from matplotlib.widgets import Button, Slider
 ## Submodules ##
-from .utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint
+from .utilities import fix_exposure, analyze_image, plot_image, verboseprint, debugprint, plot_simple
 from .waveform import Superposition
 from .constants import *
 ## Other ##
@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# noinspection PyTypeChecker,PyUnusedLocal,PyProtectedMember
 class Card:
     """ Class designed for Opening, Configuring, & Running the Spectrum AWG card.
 
@@ -57,9 +56,9 @@ class Card:
 
         self._error_check()
 
-    def __del__(self):
-        print("\nexiting...")
-        spcm_vClose(self.hCard)
+    # def __del__(self):
+    #     print("\nexiting...")
+    #     spcm_vClose(self.hCard)
 
     ################# PUBLIC FUNCTIONS #################
 
@@ -88,7 +87,7 @@ class Card:
             print('Defaulting to Ch1 only.')
             ch0 = False
 
-        assert 80 <= amplitude <= (1000 if use_filter else 400), "Amplitude must within interval: [80 - 2000]"
+        assert 80 <= amplitude <= (1000 if use_filter else 480), "Amplitude must within interval: [80 - 2000]"
         if amplitude != int(amplitude):
             amplitude = int(amplitude)
             print("Rounding amplitude to required integer value: ", amplitude)
@@ -150,6 +149,9 @@ class Card:
             spcm_dwSetParam_i32(self.hCard, SPC_TRIG_EXT0_MODE, SPC_TM_POS)
         elif mode == 'continuous':
             spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_CONTINUOUS)
+        elif mode == 'sequence':
+            spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
+
 
         ## Sets channels to default mode if no user setting ##
         if not self.ChanReady:
@@ -176,9 +178,9 @@ class Card:
 
 
         ## Sets up a local Software Buffer then Transfers to Board ##
-        pv_buf = pvAllocMemPageAligned(NUMPY_MAX*2)  # Allocates space on PC
+        # pv_buf = pvAllocMemPageAligned(NUMPY_MAX*2)  # Allocates space on PC
         #ALERT changed above line to below
-        # pv_buf = pvAllocMemPageAligned(sample_length*2)
+        pv_buf = pvAllocMemPageAligned(min(sample_length*2, NUMPY_MAX*2))
 
         pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
 
@@ -328,7 +330,7 @@ class Card:
         ## Special Cases GUI/blocking ##
         if cam is not None:       # GUI Mode
             self._run_cam(cam)
-            spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
+            # spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
         elif self.Sequence:
             verboseprint('Sequence running...')
         elif block:
@@ -348,7 +350,7 @@ class Card:
             print("Stopping card.")
             spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_CARD_STOP)
 
-    def stabilize_intensity(self, wav, cam=None, which_cam=0):
+    def stabilize_intensity(self, wav, cam=None, which_cam=1):
         """ Balances power across traps.
 
         Applies an iterative update to the magnitude vector
@@ -381,13 +383,20 @@ class Card:
         assert isinstance(wav, Superposition), "Only Superpositions of pure tones can be optimized!"
 
         if cam is None:  # If we're not in GUI mode
-            self.load_waveforms(wav)
-            self.wiggle_output(block=False)
             cam = self._run_cam(which_cam=which_cam)  # Retrieves a cam
-            which_cam = 0
+            self.load_waveforms(wav, mode='continuous')
+            self.wiggle_output(block=False)
+
+            # which_cam = 0
             print('hello>')
+
   # Outputs the given wave
 
+        # self.load_waveforms(wav,mode='continuous')
+        # self.wiggle_output(block=False)
+
+        # plot_simple(which_cam, cam.latest_frame())
+        # sleep(1000)
         L = 0.2  # Correction Rate
         mags = wav.get_magnitudes()
         ntraps = len(mags)
@@ -395,52 +404,71 @@ class Card:
         while step_num < 5:
             step_num += 1
             verboseprint("Iteration ", step_num)
-
+            # print(cam)
             trap_powers = analyze_image(which_cam, cam, ntraps, step_num)
-
+            print(trap_powers)
             mean_power = trap_powers.mean()
             rel_dif = 100 * trap_powers.std() / mean_power
             verboseprint(f'Relative Power Difference: {rel_dif:.2f} %')
 
             ## Chain of performance thresholds ##
-            if rel_dif < 0.1:
+            if rel_dif==0.00:
+                print('error')
+                L=0.1
+            elif 0.001< rel_dif < 0.1:
                 debugprint("WOW")
                 break
             elif rel_dif < 0.36:
                 L = 0.001
+                break
             elif rel_dif < 0.5:
                 L = 0.01
+                break
+            elif rel_dif < 1:
+                L = 0.05
+                break
             elif rel_dif < 2:
                 L = 0.05
             elif rel_dif < 5:
-                L = 0.1
+                L = 0.2
+            elif rel_dif < 10:
+                L = 0.4
 
-            deltaM = [(mean_power - P)/P for P in trap_powers]
-            dmags = [L * dM / sqrt(abs(dM)) for dM in deltaM]
-            wav.set_magnitudes(np.add(mags, dmags))
+            deltaM = np.array([(mean_power - P)/P for P in trap_powers])
+            # dmags = [L * dM / sqrt(abs(dM)) for dM in deltaM]
+            # print('deltaM', deltaM)
+            # print('dmags', dmags)
+            # print(np.add(mags, dmags))
+            # wav.set_magnitudes(np.add(mags, dmags))
+            new_mags = np.zeros(len(mags))
+            # new_mags = np.array([mags[0], mags[1]/2])
+            for i in range(len(mags)):
+                new_mags[i]=np.multiply(np.array(mags)[i],1+L*deltaM[i])
+            print(new_mags)
+            wav.set_magnitudes(new_mags)
             self._update_magnitudes(wav)
+            sleep(5)
 
-        for i in range(5):
-            if rel_dif > 0.5:
-                break
-            sleep(2)
-
-            # im = np.zeros(cam.latest_frame().shape)
-            # for _ in range(10):
-            #     imm = cam.latest_frame()
-            #     for _ in range(9):
-            #         imm = np.add(imm, cam.latest_frame())
-            #     imm = np.multiply(imm, 0.1)
-            #
-            #     im = np.add(im, imm)
-            # im = np.multiply(im, 0.1)
-
-            trap_powers = analyze_image(which_cam, cam, ntraps)
-            dif = 100 * trap_powers.std() / trap_powers.mean()
-            verboseprint(f'Relative Power Difference: {dif:.2f} %')
-
-        plot_image(which_cam, cam.latest_frame(), ntraps)
-        cam.close()
+        # for i in range(5):
+        #     if rel_dif > 0.5:
+        #         break
+        #
+        #     im = np.zeros(cam.latest_frame().shape)
+        #     for _ in range(10):
+        #         imm = cam.latest_frame()
+        #         for _ in range(9):
+        #             imm = np.add(imm, cam.latest_frame())
+        #         imm = np.multiply(imm, 0.1)
+        #
+        #         im = np.add(im, imm)
+        #     im = np.multiply(im, 0.1)
+        #
+        #     trap_powers = analyze_image(which_cam, cam, ntraps)
+        #     dif = 100 * trap_powers.std() / trap_powers.mean()
+        #     verboseprint(f'Relative Power Difference: {dif:.2f} %')
+        #
+        # plot_image(which_cam, cam.latest_frame(), ntraps)
+        # cam.close()
 
     def reset_card(self):
         """ Wipes Card Configuration clean.
@@ -449,6 +477,71 @@ class Card:
         self.ChanReady = False
         self.BufReady = False
 
+    def sequence_replay(self, start_step, seg_size=32000):
+        """" Example code with 2 segments. First is played 10 times then unconditionally left and replay switches over to second.
+        Second segment is repeated until trigger event is detected by the card.
+        After trigger detection, the sequence starts over again until card is stopped.
+        How do we set the current configuration in the first place?
+        """
+        # step tells us which segment to loop for how many times, and what the next step is
+        max_segments = 2  # the caltech people use 8192
+        # readout used bytes per sample
+        # int32(lBytesPerSample) # what is this? just need to define variable lBytesPerSample?
+        lBytesPerSample = int32(1)
+        spcm_dwGetParam_i32(self.hCard, SPC_MIINST_BYTESPERSAMPLE, byref(lBytesPerSample))
+
+        # Setting up card mode
+        spcm_dwSetParam_i32(self.hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_MAXSEGMENTS, max_segments)
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_STARTSTEP, start_step)
+
+        # Set up data memory and transfer data
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, 0)  # set current config switch to segment 0
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,
+                            seg_size)  # caltech people make all their segments multiples of 20us
+        # (SAMP_FREQ = 1GS/s)*(20us) = 20e3 samples
+        # according to manual: min segment size is 384 samples for 1 active channel (192 samples for 2 active channels)
+        # max segment size is 2 GS/active channels/number of sequence segments = 122e3 samples for 2 channels an 8192 segments
+
+        # assumes buffer memory has been allocated and is already filled with valid data -- copy something from Aron's function for this?
+        num = 32000
+        pv_buf = pvAllocMemPageAligned(num * 2)  # Allocates space on PC
+        pData = pv_buf
+        pn_buf = cast(pv_buf, ptr16)  # Casts pointer into something usable
+        spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pData, 0, uint64(seg_size)) # * np.int32(lBytesPerSample)))
+        # ^what is pData?
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+
+        # setting up the data memory and transfer data
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, 1)  # set current config switch to segment 1
+        spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE, int(seg_size / 2))  # define size of current segment 1
+
+        # assumes buffer memory has been allocated and is already filled with valid data -- copy something from Aron's function for this?
+        # print(seg_size // 2 * np.int32(lBytesPerSample))
+        spcm_dwDefTransfer_i64(self.hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, 0, pData, 0,
+                               int32(seg_size // 2 * np.int32(lBytesPerSample)))
+        spcm_dwSetParam_i32(self.hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
+
+        # setting up sequence memory (only 2 steps here as example)
+        lStep = 0  # current step is step 0
+        llSegment = 0  # associated data memory segment is 0
+        llLoop = 10  # pattern repeated 10 times
+        llNext = 1  # next step is step 1
+        llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
+
+        # combine all parameters into one int64 bit value
+        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+        print(llValue)
+        spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+        lStep = 1  # current step is step 1
+        llSegment = 1  # associated data memory segment is 1
+        llLoop = 1  # pattern repeated once
+        llNext = 0  # next step is step 0
+        llCondition = SPCSEQ_ENDLOOPONTRIG  # repeat current step until trig has occurred
+        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+        spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+        # then start the card!
     ################# PRIVATE FUNCTIONS #################
 
     def _error_check(self, halt=True, print_err=True):
@@ -497,11 +590,13 @@ class Card:
 
         ## Checks that each wave can fit in the allowed segments ##
         limit = MEM_SIZE / (segs * 2)  # Segment capacity in samples
+        print(limit)
         max_wav = max([wav.SampleLength for wav in wavs])
         assert max_wav <= limit, "%i waves limits each segment to %i samples." % (len(wavs), limit)
 
         ## Sets up a local Software Buffer for Transfer to Board ##
-        pv_buf = pvAllocMemPageAligned(NUMPY_MAX*2)  # Allocates space on PC
+        num = min(max_wav, NUMPY_MAX)
+        pv_buf = pvAllocMemPageAligned(num*2)  # Allocates space on PC
         pn_buf = cast(pv_buf, ptr16)              # Casts pointer into something usable
 
         # Writes each waveform from the sequence to a corresponding segment on Board Memory ##
@@ -509,8 +604,10 @@ class Card:
         for itr, (idx, wav) in enumerate(zip(indices, wavs)):
             verboseprint("\tTransferring Seg %d of size %d bytes to index %d..." % (itr, wav.SampleLength*2, idx))
             start = time()
+            print(idx)
             spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_WRITESEGMENT, int32(idx))
-            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE,  int32(wav.SampleLength))
+            print(wav.SampleLength)
+            spcm_dwSetParam_i32(self.hCard, SPC_SEQMODE_SEGMENTSIZE, int32(wav.SampleLength))
             self._error_check()
 
             self._write_segment([wav], pv_buf, pn_buf)
@@ -597,7 +694,7 @@ class Card:
         spcm_dwSetParam_i32(self.hCard, SPC_CLOCKMODE, SPC_CM_EXTREFCLOCK)
         spcm_dwSetParam_i32(self.hCard, SPC_REFERENCECLOCK, 10000000)
         spcm_dwSetParam_i64(self.hCard, SPC_SAMPLERATE, int64(int(SAMP_FREQ)))  # Sets Sampling Rate
-        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # Disables Clock Output
+        spcm_dwSetParam_i32(self.hCard, SPC_CLOCKOUT, 0)  # 0 Disables Clock Output, 1 enables
         check_clock = int64(0)
         spcm_dwGetParam_i64(self.hCard, SPC_SAMPLERATE, byref(check_clock))  # Checks Sampling Rate
         verboseprint("Achieved Sampling Rate: ", check_clock.value)
@@ -645,6 +742,7 @@ class Card:
         cam = instrument(names[which_cam])
 
         ## Cam Live Stream ##
+        # cam._set_exposure(0.87 * u.milliseconds)
         cam.start_live_video(framerate=10 * u.hertz)
 
         ## No-Display mode ##
@@ -661,7 +759,7 @@ class Card:
                 im = cam.latest_frame()
                 ax1.clear()
                 if which_cam:
-                    im = im[300:501, 300:501]
+                    im = im[390:450, 520:580]
                 ax1.imshow(im)
 
         ## Button: Automatic Exposure Adjustment ##
@@ -670,7 +768,7 @@ class Card:
 
         ## Button: Intensity Feedback ##
         def stabilize(event):  # Wrapper for Intensity Feedback function.
-            self.stabilize_intensity(self.Wave, which_cam, cam)
+            self.stabilize_intensity(self.Wave, cam, which_cam)
 
         def snapshot(event):
             im = cam.latest_frame()

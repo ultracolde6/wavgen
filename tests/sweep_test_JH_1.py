@@ -5,7 +5,7 @@ from wavgen import utilities
 import os
 
 if __name__ == '__main__':
-    filename = 'sweep_92-94_100-3-100'
+    filename = 'sweep_(92-94)-(92-102)_100-3-100'
     # If we have already computed the Waveforms...
     if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.
         AB = utilities.from_file(filename, 'AB')
@@ -16,8 +16,8 @@ if __name__ == '__main__':
     else:
         ## Define Waveform parameters ##
 
-        freq_A = [100E6 + j*2.5E6 for j in range(1)]
-        freq_B = [102E6 + j*5E6 for j in range(1)]
+        freq_A = [92E6 + j*2E6 for j in range(2)]
+        freq_B = [92E6 + j*5E6 for j in range(1)]
         phasesA = utilities.rp[:len(freq_A)]
         phasesB = phasesA #utilities.rp[1:len(freq_A)+1]
 

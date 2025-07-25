@@ -13,8 +13,50 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import SpanSelector, Slider
 from .spectrum import SPCSEQ_END, SPCSEQ_ENDLOOPALWAYS, SPCSEQ_ENDLOOPONTRIG
 
-
-rp = [1.934454997984215 , 2.8421067958595616 , 2.677047569335915 , 1.1721824508892977 , 6.158065366794917 ,
+# rp = [1.934454997984215 , 2.8421067958595616 , 2.677047569335915 , 1.1721824508892977 , 6.158065366794917 ,
+#     3.2691669970332335 , 2.636275384021578 , 1.6254638780707589 , 4.919003540925028 , 1.6084971058993613 ,
+#     5.2499387038268575 , 2.3688357219496265 , 4.713893357925578 , 5.223088585470364 , 0.3257672775855246 ,
+#     2.9571038289407126 , 2.4258010454280505 , 4.084691833872798 , 6.1867748426923335 , 5.200604534623386 ,
+#     3.3056812953203925 , 4.189137888598024 , 1.7650458297661427 , 4.080234513102615 , 0.6054340441874929 ,
+#     1.6794564559420377 , 2.385531129338364 , 5.400612735688388 , 4.978163766484847 , 5.335873096123345 ,
+#     0.9273414057111622 , 2.4193737371833834 , 2.8777346889035185 , 6.214778264445415 , 3.758998982400149 ,
+#     3.7838618270241438 , 0.60809445869596 , 0.1507635470741596 , 4.371624180280478 , 4.539661740808455 ,
+#     0.3847626491973457 , 6.145153550108536 , 1.008385520345513 , 5.852133555294753 , 0.016620198470431467 ,
+#     2.0158660597106937 , 1.7261705033296812 , 5.223710321703292 , 2.2220833343473436 , 2.9180968688523863 ,
+#     2.122206092376529 , 5.402785161537129 , 5.478771156577643 , 2.291512850266888 , 1.5715835663916051 ,
+#     2.255249593007268 , 1.571931477334538 , 1.3993650740616836 , 0.6011622182733365 , 3.1927489491586014 ,
+#     4.381746015200942 , 1.974081456041723 , 1.393542167751563 , 5.521906837731298 , 5.612290110455913 ,
+#     2.31118503089683 , 4.829965025115874 , 0.3421538142269762 , 4.555158230853398 , 1.6134448025783288 ,
+#     6.157248240200644 , 5.027656526405459 , 0.295901526406544 , 5.502983369799478 , 4.472320872860696 ,
+#     1.7618458333352276 , 4.41379605495804 , 4.6652622669145725 , 3.379174996566024 , 2.9970834472120313 ,
+#     4.886226685869682 , 4.340847582571988 , 0.3684494418446467 , 3.3447731714626525 , 0.3569784383241427 ,
+#     0.2362652137260263 , 4.420022732699935 , 6.263528358483921 , 6.2277672316776505 , 6.0305138883226554 ,
+#     2.5228306972997183 , 0.29710864827838496 , 0.5164352609138518 , 3.079335706611155 , 0.7796787693888715 ,
+#     2.9068441712875255 , 3.3802818513629718 , 0.16738916961106443 , 1.7466706296839072 , 0.7532941316251239]
+""" 100 Pre-calculated Random Phases in range [0, 2pi] """
+# rp=[4.00627675, 0.60909873, 0.55476328, 0.7467712,  2.6828748,  5.23432021, 1.43827396, 1.41563259, 0.45170676, 1.6084971058993613 ,
+#      5.2499387038268575 , 2.3688357219496265 , 4.713893357925578 , 5.223088585470364 , 0.3257672775855246 ,
+#     2.9571038289407126 , 2.4258010454280505 , 4.084691833872798 , 6.1867748426923335 , 5.200604534623386 ,
+#      3.3056812953203925 , 4.189137888598024 , 1.7650458297661427 , 4.080234513102615 , 0.6054340441874929 ,
+#      1.6794564559420377 , 2.385531129338364 , 5.400612735688388 , 4.978163766484847 , 5.335873096123345 ,
+#     0.9273414057111622 , 2.4193737371833834 , 2.8777346889035185 , 6.214778264445415 , 3.758998982400149 ,
+#      3.7838618270241438 , 0.60809445869596 , 0.1507635470741596 , 4.371624180280478 , 4.539661740808455 ,
+#      0.3847626491973457 , 6.145153550108536 , 1.008385520345513 , 5.852133555294753 , 0.016620198470431467 ,
+#      2.0158660597106937 , 1.7261705033296812 , 5.223710321703292 , 2.2220833343473436 , 2.9180968688523863 ,
+#      2.122206092376529 , 5.402785161537129 , 5.478771156577643 , 2.291512850266888 , 1.5715835663916051 ,
+#      2.255249593007268 , 1.571931477334538 , 1.3993650740616836 , 0.6011622182733365 , 3.1927489491586014 ,
+#      4.381746015200942 , 1.974081456041723 , 1.393542167751563 , 5.521906837731298 , 5.612290110455913 ,
+#      2.31118503089683 , 4.829965025115874 , 0.3421538142269762 , 4.555158230853398 , 1.6134448025783288 ,
+#      6.157248240200644 , 5.027656526405459 , 0.295901526406544 , 5.502983369799478 , 4.472320872860696 ,
+#      1.7618458333352276 , 4.41379605495804 , 4.6652622669145725 , 3.379174996566024 , 2.9970834472120313 ,
+#      4.886226685869682 , 4.340847582571988 , 0.3684494418446467 , 3.3447731714626525 , 0.3569784383241427 ,
+#      0.2362652137260263 , 4.420022732699935 , 6.263528358483921 , 6.2277672316776505 , 6.0305138883226554 ,
+#      2.5228306972997183 , 0.29710864827838496 , 0.5164352609138518 , 3.079335706611155 , 0.7796787693888715 ,
+#      2.9068441712875255 , 3.3802818513629718 , 0.16738916961106443 , 1.7466706296839072 , 0.7532941316251239]
+## 16 tweezers + 1
+rp = [3.67339265, 2.4002002,  4.12547201, 1.45319259, 0.47256693, 2.83582555,6.03931703, 5.0194085,
+    5.3237773,  1.27536582, 5.91854789, 0.5338513, 2.52641684, 3.83084642, 1.5365708,  0.7507924, 5.501468942,
+    1.934454997984215 , 2.8421067958595616 , 2.677047569335915 , 1.1721824508892977 , 6.158065366794917 ,
     3.2691669970332335 , 2.636275384021578 , 1.6254638780707589 , 4.919003540925028 , 1.6084971058993613 ,
     5.2499387038268575 , 2.3688357219496265 , 4.713893357925578 , 5.223088585470364 , 0.3257672775855246 ,
     2.9571038289407126 , 2.4258010454280505 , 4.084691833872798 , 6.1867748426923335 , 5.200604534623386 ,
@@ -34,7 +76,53 @@ rp = [1.934454997984215 , 2.8421067958595616 , 2.677047569335915 , 1.17218245088
     0.2362652137260263 , 4.420022732699935 , 6.263528358483921 , 6.2277672316776505 , 6.0305138883226554 ,
     2.5228306972997183 , 0.29710864827838496 , 0.5164352609138518 , 3.079335706611155 , 0.7796787693888715 ,
     2.9068441712875255 , 3.3802818513629718 , 0.16738916961106443 , 1.7466706296839072 , 0.7532941316251239]
-""" 100 Pre-calculated Random Phases in range [0, 2pi] """
+
+
+#
+class JiggleWave:
+    """
+    A wrapper object that stores the information about a (constant) frequency modulated Sine wave.
+
+    Attributes
+    ----------
+    Base Frequency : int
+        The frequency of the base tone in Hertz.
+    Base Magnitude : float
+        A fraction, in [0,1], indicating the tone's amplitude as a fraction of the comprising parent Waveform's.
+    Base Phase : float
+        The initial phase, in [0, 2*pi], that the Wave begins with at the comprising parent Waveform's start.
+
+    Modulation Frequency : int
+        The frequency of the modulation in Hertz.
+    Modulation Magnitude : float
+        In units of Hz, indicating the modulation amplitude of (angular) frequency.
+    Modulation Phase : float
+        The initial phase, in [0, 2*pi], that the Wave begins with at the comprising parent Waveform's start.
+
+    """
+    def __init__(self, basefreq, basemag=1.0, basephase=0.0, modfreq=0, modmag=0.0, modphase=0.0):
+        ## Validate ##
+        assert basefreq > 0, ("Invalid Frequency: %.3f, must be positive" % basefreq)
+        assert modfreq >= 0, ("Invalid Modulation Frequency: %.3f, must be non-negative" % modfreq)
+        assert 0 <= basemag <= 1, ("Invalid magnitude: %.3f, must be within interval [0,1]" % basemag)
+        ## Initialize ##
+        self.BaseFrequency = int(basefreq)
+        self.BaseMagnitude = basemag
+        self.BasePhase = basephase
+        self.ModFrequency = int(modfreq)
+        self.ModMagnitude = modmag
+        self.ModPhase = modphase
+
+    def __lt__(self, other):
+        return self.BaseFrequency < other.BaseFrequency
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __str__(self):
+        return "BaseFreq: %d; BaseMag: %f; BasePhase: %f; ModFreq: %d; ModMag: %f; ModPhase: %f" % (self.Frequency, self.Magnitude, self.Phase)
+
+
 
 
 class Wave:
@@ -133,7 +221,6 @@ def from_file(filepath, datapath):
             Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.
     """
     classes = inspect.getmembers(sys.modules['wavgen.waveform'], inspect.isclass)
-
     filepath = os.path.splitext(filepath)[0] + '.h5'
 
     kwargs = {}
@@ -144,11 +231,12 @@ def from_file(filepath, datapath):
 
         ## Waveform's Python Class name ##
         class_name = dat.attrs.get('class')
-
+        # print(class_name)
         ## Extract the Arguments ##
         try:
             for key in dat.attrs.get('keys'):
                 kwargs[key] = dat.attrs.get(key)
+                # print(key, dat.attrs.get(key))
         except TypeError:
             pass
 
@@ -156,7 +244,52 @@ def from_file(filepath, datapath):
     ## Find the proper Class & Construct it ##
     for name, cls in classes:
         if class_name == name:
+            # print(name, cls)
             obj = cls.from_file(**kwargs)
+            break
+    assert obj, "The retrieved 'class' attribute matches no module class"
+
+    ## Configure Status ##
+    obj.Latest = True
+    obj.FilePath = filepath
+    obj.DataPath = datapath
+
+    return obj
+
+
+def from_file_simple(filepath, datapath):
+    """ Extracts parameters from a HDF5 dataset and constructs the corresponding Waveform object.
+
+        Parameters
+        ----------
+        filepath : str
+            The name of the :doc:`HDF5 <../info/hdf5>` file.
+        datapath : str
+            Path to a specific dataset in the HDF5 database.
+
+        Returns
+        -------
+        :class:`~wavgen.waveform.Waveform`
+            Marshals extracted parameters into correct Waveform subclass constructor, returning the resulting object.
+    """
+    classes = inspect.getmembers(sys.modules['wavgen.waveform'], inspect.isclass)
+
+    filepath = os.path.splitext(filepath)[0] + '.h5'
+
+    with h5py.File(filepath, 'r') as f:
+        ## Maneuver to relevant Data location ##
+        dat = f.get(datapath)
+        assert dat is not None, "Invalid datapath"
+
+
+        sample_length = dat.attrs.get('sample_length')
+    obj = None
+    ## Find the proper Class & Construct it ##
+    class_name = 'Waveform'
+    for name, cls in classes:
+        if class_name == name:
+            print(name, cls)
+            obj = cls.from_file_simple(sample_length = sample_length)
             break
     assert obj, "The retrieved 'class' attribute matches no module class"
 
@@ -532,8 +665,28 @@ def plot_image(which_cam, image, ntraps, step_num=0, fit=None, guess=False):
     plt.show(block=False)
     verboseprint("Fig_Newton")
 
+def plot_simple(which_cam, image):
+    """ PLot image
+
+    Parameters
+    ----------
+    which_cam : bool
+        `True` or `False` selects Pre- or Post- chamber cameras respectively.
+        Returns None is passed.
+    image : 2d ndarray
+        Pixel matrix obtained from camera driver.
+    """
+    if which_cam is None:
+        return
+
+    plt.figure()
+    plt.imshow(image)
+    plt.show(block=False)
+    verboseprint("Fig_Newton")
+
 
 # noinspection PyUnboundLocalVariable
+
 def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
     """ Fits 1d Gaussians across image x-axis & returns the peak values.
 
@@ -557,9 +710,8 @@ def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
     """
     trap_powers = np.zeros(ntraps)
     for _ in range(iterations):
-        image = cam.latest_frame()
+        image = cam.latest_frame()#[390:450, 520:580]
         peak_vals, params0 = extract_peaks(which_cam, image, ntraps)
-        print(image)
 
         ## Fitting ##
         xdata = np.arange(image.shape[1])
@@ -570,7 +722,8 @@ def analyze_image(which_cam, cam, ntraps, step_num=0, iterations=20):
         except RuntimeError:
             plot_image(which_cam, image, ntraps, step_num, guess=True)
             return np.ones(ntraps)
-    print(popt)
+    # print(popt)
+    # plt.imshow(image)
     plot_image(which_cam, image, ntraps, step_num, popt)
     return np.multiply(trap_powers, 1/iterations)
 
