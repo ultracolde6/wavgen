@@ -1,3 +1,21 @@
+"""
+Waveform Base Module
+
+This module provides the fundamental Waveform class that serves as the base for all
+waveform types in the wavgen package. The Waveform class handles basic waveform
+operations including computation, storage, loading, and plotting.
+
+The module includes:
+- Waveform: Base class for all waveform objects with common attributes and methods
+- Parallel computation support for large waveform generation
+- HDF5 file I/O for waveform storage and retrieval
+- Temporary file management for unsaved waveforms
+- Basic plotting and analysis utilities
+
+All other waveform classes (Superposition, Sweep, etc.) inherit from this base class
+to ensure consistent interface and functionality across the package.
+"""
+
 import numpy as np
 import multiprocessing as mp
 from easygui import buttonbox, multenterbox
@@ -74,6 +92,21 @@ class Waveform:
                 os.remove('temporary.h5')
 
     def __eq__(self, other):
+        """Compare this waveform with another waveform for equality.
+        
+        Compares all attributes except those inherited from the base Waveform class.
+        Only compares the unique attributes of the specific waveform type.
+        
+        Parameters
+        ----------
+        other : Waveform
+            Another waveform object to compare with.
+            
+        Returns
+        -------
+        bool
+            True if the waveforms are equal (have same unique attributes), False otherwise.
+        """
         self, other = self.__dict__, other.__dict__  # For cleanliness
 
         def comp_attr(A, B):
@@ -108,6 +141,21 @@ class Waveform:
         q.put((p, wav, max(wav.max(), abs(wav.min()))))
 
     def config_dset(self, dset):
+        """Configure an HDF5 dataset with waveform metadata.
+        
+        Sets up the dataset attributes including sample length and creates
+        a table of contents for the dataset keys.
+        
+        Parameters
+        ----------
+        dset : h5py.Dataset
+            The HDF5 dataset to configure with waveform attributes.
+            
+        Returns
+        -------
+        h5py.Dataset
+            The configured dataset with metadata attributes added.
+        """
         ## Contents ##
         dset.attrs.create('sample_length', data=self.SampleLength)
 
@@ -118,10 +166,40 @@ class Waveform:
 
     @classmethod
     def from_file(cls, **kwargs):
+        """Create a waveform instance from file parameters.
+        
+        This is a placeholder method that should be overridden by subclasses
+        to provide specific file loading functionality.
+        
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments passed to the class constructor.
+            
+        Returns
+        -------
+        Waveform
+            A new waveform instance created with the given parameters.
+        """
         return cls(**kwargs)
 
     @classmethod
     def from_file_simple(cls, **kwargs):
+        """Create a waveform instance from file parameters (simple version).
+        
+        This is a placeholder method that should be overridden by subclasses
+        to provide simplified file loading functionality.
+        
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments passed to the class constructor.
+            
+        Returns
+        -------
+        Waveform
+            A new waveform instance created with the given parameters.
+        """
         return cls(**kwargs)
 
     def compute_waveform(self, filepath=False, datapath=False, cpus=None):
@@ -228,6 +306,25 @@ class Waveform:
     ## PRIVATE FUNCTIONS ##
 
     def _compute_waveform(self, wav, temp, cpus):
+        """Compute the waveform data and normalize it.
+        
+        This private method handles the actual computation of waveform data,
+        including parallel processing, normalization, and saving to disk.
+        
+        Parameters
+        ----------
+        wav : h5py.Dataset
+            The target dataset where the final normalized waveform will be stored.
+        temp : h5py.Dataset
+            Temporary dataset for storing intermediate computation results.
+        cpus : int, optional
+            Number of CPU cores to use for parallel processing.
+            
+        Returns
+        -------
+        float
+            The maximum absolute value found in the computed waveform before normalization.
+        """
         start_time = time()  # Timer
 
         ## Compute the Waveform ##
@@ -261,8 +358,8 @@ class Waveform:
         # norm = 2861.1238613259757 # waveforms_160_16Twz_5lambda
         # norm = 1998.8758446874072 # waveforms_160_30Twz_5lambda
         # norm = 3345.727380571959 # waveforms_160_16Twz_1MHz
-        # norm = 3548.4260981477737 # waveforms_160_16Twz_5lambda_v1
-        # norm = 3643.160262123701 # waveforms_160_16Twz_5,5lambda_v3
+        # norm = 3548.4260981477737 # for waveforms_160_16Twz_5lambda_v1
+        # norm = 3643.160262123701 # for waveforms_160_16Twz_5,5lambda_v3
         # norm = 3257.9421980055795 # 5lambda_v2
         # norm = 1722.857036876052 # 41twz_0,75MHz
         # norm = 2121.6211080626194 # 38twz_5lambda
@@ -292,6 +389,25 @@ class Waveform:
         return max_val
 
     def _parallelize(self, buffer, func, cpus):
+        """Execute waveform computation in parallel across multiple CPU cores.
+        
+        Manages parallel processing of waveform computation by distributing
+        work across multiple processes and collecting results through a queue.
+        
+        Parameters
+        ----------
+        buffer : h5py.Dataset
+            The buffer where computed waveform data will be stored.
+        func : callable
+            The function to be executed in parallel (typically self.compute).
+        cpus : int, optional
+            Number of CPU cores to use. If None, uses 75% of available cores.
+            
+        Returns
+        -------
+        float
+            The maximum absolute value found across all computed waveform segments.
+        """
         ## Number of Parallel Processes ##
         cpus_max = mp.cpu_count()
         cpus = min(cpus_max, cpus) if cpus else int(0.75*cpus_max)

@@ -1,3 +1,27 @@
+"""
+Waveform Generation Module
+
+This module provides various waveform classes for generating different types of
+waveforms used in optical tweezer experiments. All classes inherit from the base
+Waveform class and implement specific waveform generation algorithms.
+
+The module includes:
+- Superposition: Static trap configuration with multiple frequency components
+- Sweep: Smooth modulation between two superposition configurations
+- Sweep1: Sweep with hold times and configurable ramp shapes
+- Sweep_loop: Looping sweep with multiple iterations
+- Sweep_sequence: Sequence-based sweep operations
+- Sweep_crop: Cropped sweep with specific sections
+- LinearTest: Simple linear test waveform
+- HS1: High-speed sweep waveform
+- SuperpositionJiggle: Frequency-modulated superposition
+- SingleJiggle: Single frequency-modulated component
+
+Each waveform class implements specific computation algorithms and provides
+methods for configuration, computation, and data storage. The module also includes
+helper functions like even_spacing for creating common trap configurations.
+"""
+
 from math import pi, sin, cosh, log
 from .waveform_base import Waveform
 from .utilities import Wave
@@ -103,6 +127,18 @@ class Superposition(Waveform):
         super().__init__(sample_length, amp)
 
     def compute(self, p, q):
+        """Compute a portion of the superposition waveform.
+        
+        Calculates the waveform by summing all pure tone components
+        for the specified interval. This method is dispatched to parallel processes.
+        
+        Parameters
+        ----------
+        p : int
+            Index indicating which interval of the waveform to calculate.
+        q : multiprocessing.Queue
+            Queue for returning computation results to parent process.
+        """
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
         waveform = np.zeros(N, dtype=float)
 
@@ -129,6 +165,21 @@ class Superposition(Waveform):
 
 
     def config_dset(self, dset):
+        """Configure HDF5 dataset with superposition waveform metadata.
+        
+        Sets up the dataset attributes including frequencies, magnitudes,
+        phases, and sample length for the superposition waveform.
+        
+        Parameters
+        ----------
+        dset : h5py.Dataset
+            The HDF5 dataset to configure with superposition attributes.
+            
+        Returns
+        -------
+        h5py.Dataset
+            The configured dataset with metadata attributes added.
+        """
         ## Contents ##
         dset.attrs.create('freqs', data=np.array([w.Frequency for w in self.Waves]))
         dset.attrs.create('mags', data=np.array([w.Magnitude for w in self.Waves]))
@@ -164,6 +215,13 @@ class Superposition(Waveform):
         self.Latest = False
 
     def get_phases(self):
+        """Get the phases of all pure tones in the superposition.
+        
+        Returns
+        -------
+        list of float
+            Phase values in radians for each pure tone, ordered by increasing frequency.
+        """
         return [w.Phase for w in self.Waves]
 
     def set_phases(self, phases):
@@ -267,6 +325,18 @@ class Sweep(Waveform):
         super().__init__(sample_length, max(config_a.Amplitude, config_b.Amplitude))
 
     def compute(self, p, q):
+        """Compute a portion of the sweep waveform.
+        
+        Calculates the waveform by interpolating between two superposition
+        configurations for the specified interval. This method is dispatched to parallel processes.
+        
+        Parameters
+        ----------
+        p : int
+            Index indicating which interval of the waveform to calculate.
+        q : multiprocessing.Queue
+            Queue for returning computation results to parent process.
+        """
         N = min(DATA_MAX, self.SampleLength - p*DATA_MAX)
         waveform = np.empty(N, dtype=float)
 
@@ -291,6 +361,21 @@ class Sweep(Waveform):
         q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
     def config_dset(self, dset):
+        """Configure HDF5 dataset with sweep waveform metadata.
+        
+        Sets up the dataset attributes including frequencies, magnitudes,
+        and phases for both initial and final configurations.
+        
+        Parameters
+        ----------
+        dset : h5py.Dataset
+            The HDF5 dataset to configure with sweep attributes.
+            
+        Returns
+        -------
+        h5py.Dataset
+            The configured dataset with metadata attributes added.
+        """
         ## Contents ##
         dset.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
         dset.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
@@ -299,7 +384,6 @@ class Sweep(Waveform):
         dset.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
         dset.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
         dset.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
-
         dset.attrs.create('sample_length', data=self.SampleLength)
 
         ## Table of Contents ##
@@ -425,6 +509,21 @@ class Sweep1(Waveform):
         q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
     def config_dset(self, dset):
+        """Configure HDF5 dataset with sweep waveform metadata.
+        
+        Sets up the dataset attributes including frequencies, magnitudes,
+        and phases for both initial and final configurations.
+        
+        Parameters
+        ----------
+        dset : h5py.Dataset
+            The HDF5 dataset to configure with sweep attributes.
+            
+        Returns
+        -------
+        h5py.Dataset
+            The configured dataset with metadata attributes added.
+        """
         ## Contents ##
         dset.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
         dset.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
@@ -433,7 +532,6 @@ class Sweep1(Waveform):
         dset.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
         dset.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
         dset.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
-
         dset.attrs.create('sample_length', data=self.SampleLength)
 
         ## Table of Contents ##
@@ -555,6 +653,21 @@ class Sweep_loop(Waveform):
         q.put((p, waveform, max(waveform.max(), abs(waveform.min()))))
 
     def config_dset(self, dset):
+        """Configure HDF5 dataset with sweep waveform metadata.
+        
+        Sets up the dataset attributes including frequencies, magnitudes,
+        and phases for both initial and final configurations.
+        
+        Parameters
+        ----------
+        dset : h5py.Dataset
+            The HDF5 dataset to configure with sweep attributes.
+            
+        Returns
+        -------
+        h5py.Dataset
+            The configured dataset with metadata attributes added.
+        """
         ## Contents ##
         dset.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
         dset.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
@@ -563,7 +676,6 @@ class Sweep_loop(Waveform):
         dset.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
         dset.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
         dset.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
-
         dset.attrs.create('sample_length', data=self.SampleLength)
 
         ## Table of Contents ##
@@ -792,6 +904,21 @@ class Sweep_sequence(Waveform):
         # return max(waveform.max(), abs(waveform.min()))
 
     def config_dset(self, dset):
+        """Configure HDF5 dataset with sweep waveform metadata.
+        
+        Sets up the dataset attributes including frequencies, magnitudes,
+        and phases for both initial and final configurations.
+        
+        Parameters
+        ----------
+        dset : h5py.Dataset
+            The HDF5 dataset to configure with sweep attributes.
+            
+        Returns
+        -------
+        h5py.Dataset
+            The configured dataset with metadata attributes added.
+        """
         ## Contents ##
         dset.attrs.create('freqsA', data=np.array([w.Frequency for w in self.WavesA]))
         dset.attrs.create('magsA', data=np.array([w.Magnitude for w in self.WavesA]))
@@ -800,7 +927,6 @@ class Sweep_sequence(Waveform):
         dset.attrs.create('freqsB', data=np.array([w.Frequency for w in self.WavesB]))
         dset.attrs.create('magsB', data=np.array([w.Magnitude for w in self.WavesB]))
         dset.attrs.create('phasesB', data=np.array([w.Phase for w in self.WavesB]))
-
         dset.attrs.create('sample_length', data=self.SampleLength)
 
         ## Table of Contents ##

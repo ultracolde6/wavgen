@@ -1,3 +1,23 @@
+"""
+Card Control Module
+
+This module provides the Card class for controlling Spectrum AWG (Arbitrary Waveform Generator)
+hardware. The Card class handles all low-level communication with the waveform generation
+hardware and provides high-level interfaces for waveform output and sequence control.
+
+The module includes:
+- Card: Main class for hardware control and waveform output
+- Channel setup and configuration
+- Waveform loading and transfer to hardware
+- Sequence mode for complex multi-step operations
+- Camera integration for real-time feedback
+- Intensity stabilization algorithms
+- Hardware error checking and management
+
+The Card class is the primary interface for users to output waveforms and control
+the physical hardware components of the system.
+"""
+
 """ Here contained is the ``Card`` class.
 """
 ## For Card Control ##
@@ -341,6 +361,15 @@ class Card:
         self._error_check()
 
     def stop_card(self):
+        """Stop the card output (for debugging sequential mode).
+        
+        This function is primarily used for debugging sequential mode operations.
+        It checks the card status and stops the card if it's currently running.
+        
+        Note
+        ----
+        This function is currently only intended for debugging sequential mode.
+        """
         assert self.Sequence, "Function only for debugging Sequential mode (for now)"
         status = int32(0)
         spcm_dwGetParam_i64(self.hCard, SPC_M2STATUS, byref(status))
@@ -478,10 +507,24 @@ class Card:
         self.BufReady = False
 
     def sequence_replay(self, start_step, seg_size=32000):
-        """" Example code with 2 segments. First is played 10 times then unconditionally left and replay switches over to second.
-        Second segment is repeated until trigger event is detected by the card.
-        After trigger detection, the sequence starts over again until card is stopped.
-        How do we set the current configuration in the first place?
+        """Set up a sequence replay with two segments for demonstration.
+        
+        This is an example implementation showing how to configure a sequence
+        with two segments. The first segment plays 10 times then transitions
+        to the second segment, which repeats until a trigger event occurs.
+        After trigger detection, the sequence starts over until stopped.
+        
+        Parameters
+        ----------
+        start_step : int
+            The starting step index for the sequence.
+        seg_size : int, optional
+            Size of each segment in samples. Default is 32000 samples.
+            
+        Note
+        ----
+        This is example code demonstrating sequence configuration.
+        The Caltech group uses 8192 segments maximum.
         """
         # step tells us which segment to loop for how many times, and what the next step is
         max_segments = 2  # the caltech people use 8192

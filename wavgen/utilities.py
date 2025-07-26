@@ -1,3 +1,23 @@
+"""
+Utilities Module
+
+This module provides utility classes and functions for waveform generation and analysis.
+It includes fundamental data structures and helper functions used throughout the wavgen package.
+
+The module includes:
+- JiggleWave: Class for frequency-modulated sine waves
+- Wave: Class for simple sine wave components
+- Step: Class for control sequence steps
+- File I/O functions for loading waveforms from HDF5 files
+- Plotting utilities for waveform visualization
+- Image analysis functions for camera-based feedback
+- Gaussian fitting and peak detection utilities
+- Camera exposure adjustment functions
+
+This module serves as a collection of common utilities that support the main
+waveform generation and card control functionality.
+"""
+
 import os
 import sys
 import h5py
@@ -101,6 +121,23 @@ class JiggleWave:
 
     """
     def __init__(self, basefreq, basemag=1.0, basephase=0.0, modfreq=0, modmag=0.0, modphase=0.0):
+        """Initialize a JiggleWave object with frequency modulation parameters.
+        
+        Parameters
+        ----------
+        basefreq : float
+            The base frequency of the wave in Hertz (must be positive).
+        basemag : float, optional
+            The magnitude of the base wave as a fraction [0,1] of the parent waveform amplitude.
+        basephase : float, optional
+            The initial phase of the base wave in radians [0, 2*pi].
+        modfreq : float, optional
+            The modulation frequency in Hertz (must be non-negative).
+        modmag : float, optional
+            The modulation magnitude in Hertz.
+        modphase : float, optional
+            The initial phase of the modulation in radians [0, 2*pi].
+        """
         ## Validate ##
         assert basefreq > 0, ("Invalid Frequency: %.3f, must be positive" % basefreq)
         assert modfreq >= 0, ("Invalid Modulation Frequency: %.3f, must be non-negative" % modfreq)
@@ -114,12 +151,43 @@ class JiggleWave:
         self.ModPhase = modphase
 
     def __lt__(self, other):
+        """Compare JiggleWave objects by base frequency for sorting.
+        
+        Parameters
+        ----------
+        other : JiggleWave
+            Another JiggleWave object to compare with.
+            
+        Returns
+        -------
+        bool
+            True if this wave's base frequency is less than the other's.
+        """
         return self.BaseFrequency < other.BaseFrequency
 
     def __eq__(self, other):
+        """Compare JiggleWave objects for equality.
+        
+        Parameters
+        ----------
+        other : JiggleWave
+            Another JiggleWave object to compare with.
+            
+        Returns
+        -------
+        bool
+            True if all attributes of both waves are equal.
+        """
         return self.__dict__ == other.__dict__
 
     def __str__(self):
+        """Return a string representation of the JiggleWave object.
+        
+        Returns
+        -------
+        str
+            A formatted string showing all wave parameters.
+        """
         return "BaseFreq: %d; BaseMag: %f; BasePhase: %f; ModFreq: %d; ModMag: %f; ModPhase: %f" % (self.Frequency, self.Magnitude, self.Phase)
 
 
@@ -138,6 +206,17 @@ class Wave:
         The initial phase, in [0, 2*pi], that the Wave begins with at the comprising parent Waveform's start.
     """
     def __init__(self, freq, mag=1.0, phase=0.0):
+        """Initialize a Wave object with sine wave parameters.
+        
+        Parameters
+        ----------
+        freq : float
+            The frequency of the sine wave in Hertz (must be positive).
+        mag : float, optional
+            The magnitude of the wave as a fraction [0,1] of the parent waveform amplitude.
+        phase : float, optional
+            The initial phase of the wave in radians [0, 2*pi].
+        """
         ## Validate ##
         assert freq > 0, ("Invalid Frequency: %d, must be positive" % freq)
         assert 0 <= mag <= 1, ("Invalid magnitude: %d, must be within interval [0,1]" % mag)
@@ -147,12 +226,43 @@ class Wave:
         self.Phase = phase
 
     def __lt__(self, other):
+        """Compare Wave objects by frequency for sorting.
+        
+        Parameters
+        ----------
+        other : Wave
+            Another Wave object to compare with.
+            
+        Returns
+        -------
+        bool
+            True if this wave's frequency is less than the other's.
+        """
         return self.Frequency < other.Frequency
 
     def __eq__(self, other):
+        """Compare Wave objects for equality.
+        
+        Parameters
+        ----------
+        other : Wave
+            Another Wave object to compare with.
+            
+        Returns
+        -------
+        bool
+            True if all attributes of both waves are equal.
+        """
         return self.__dict__ == other.__dict__
 
     def __str__(self):
+        """Return a string representation of the Wave object.
+        
+        Returns
+        -------
+        str
+            A formatted string showing all wave parameters.
+        """
         return "Frequency: %d; Magnitude: %f; Phase: %f" % (self.Frequency, self.Magnitude, self.Phase)
 
 
@@ -195,6 +305,22 @@ class Step:
     }
 
     def __init__(self, cur, seg, loops, nxt, tran=None):
+        """Initialize a Step object for control sequence management.
+        
+        Parameters
+        ----------
+        cur : int
+            The current step index in the sequence.
+        seg : int
+            The segment index in board memory for the associated waveform.
+        loops : int
+            Number of times to loop the waveform before checking transition.
+        nxt : int
+            The next step index to transition to.
+        tran : {None, 'trigger', 'end'}, optional
+            Transition behavior keyword. None for normal transition, 'trigger' for 
+            trigger-based transition, 'end' to terminate sequence.
+        """
         self.CurrentStep = cur
         self.SegmentIndex = seg
         self.Loops = loops

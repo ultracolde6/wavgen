@@ -1,3 +1,20 @@
+"""
+Constants Module
+
+This module defines global constants and parameters used throughout the wavgen package.
+These constants control hardware limits, default values, and system configuration.
+
+The module includes:
+- Hardware limits (maximum sampling frequency, memory size, etc.)
+- Default amplitudes and exposure settings
+- Data processing limits (buffer sizes, plot limits)
+- System configuration flags (verbose, debug modes)
+- Sampling frequency and timing parameters
+
+These constants ensure consistent behavior across the entire package and provide
+centralized configuration management.
+"""
+
 ### Parameters ###
 NUMPY_MAX = int(2E8)   #: Max size of Software buffer for board_ transfers (in samples)
 MAX_EXP = 150          #: Cap on the exposure value for ThorCam devices, `see here`_.
