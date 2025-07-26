@@ -1,0 +1,9 @@
+numpy>=1.19.0
+scipy>=1.7.0
+matplotlib>=3.3.0
+h5py>=3.1.0
+easygui>=0.98.3
+tqdm>=4.60.0
+watchdog>=2.1.0
+instrumental>=0.8.0
+psutil>=5.8.0 

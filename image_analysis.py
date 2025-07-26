@@ -1,3 +1,21 @@
+"""
+Image Analysis Module
+
+This module provides functions for analyzing camera images to detect and count atoms
+in optical tweezers. It includes region-of-interest (ROI) detection and analysis
+algorithms for real-time feedback in optical tweezer experiments.
+
+The module includes:
+- ROI center calculation based on tweezer frequency
+- ROI slice generation for image analysis
+- Background ROI analysis for noise reduction
+- Atom counting algorithms with threshold detection
+- Image processing utilities for optical tweezer analysis
+
+This module is designed to work with camera feedback systems to provide real-time
+analysis of atom positions and counts in optical tweezer arrays.
+"""
+
 import numpy as np
 import time
 
@@ -78,6 +96,18 @@ roi_area_bg = roi_width_bg * roi_height_bg
 
 
 def roi_center(tweezer_freq):
+    """Calculate the center coordinates for a region of interest (ROI) based on tweezer frequency.
+    
+    Parameters
+    ----------
+    tweezer_freq : float
+        The frequency of the tweezer in MHz.
+        
+    Returns
+    -------
+    list
+        [center_x, center_y] coordinates for the ROI center.
+    """
     ### weird drift ROI
     # center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 443)) / 2
     # center_y = round(2 * (-0.4 * (tweezer_freq - 100) + 72)) / 2
@@ -97,12 +127,38 @@ def roi_center(tweezer_freq):
     return [center_x, center_y]
 
 def roi_slice_func(tweezer_freq):
+    """Generate slice indices for a region of interest (ROI) based on tweezer frequency.
+    
+    Parameters
+    ----------
+    tweezer_freq : float
+        The frequency of the tweezer in MHz.
+        
+    Returns
+    -------
+    tuple
+        Slice indices (y_slice, x_slice) for the ROI.
+    """
     center_x = roi_center(tweezer_freq)[0]
     center_y = roi_center(tweezer_freq)[1]
     return tuple((slice(round(center_y - roi_height / 2), round(center_y + roi_height / 2), 1), \
                   slice(round(center_x - roi_width / 2), round(center_x + roi_width / 2), 1)))
 
 def roi_slice_func_background(tweezer_freq, y_offset):
+    """Generate slice indices for a background region of interest (ROI) based on tweezer frequency.
+    
+    Parameters
+    ----------
+    tweezer_freq : float
+        The frequency of the tweezer in MHz.
+    y_offset : int
+        Vertical offset for the background ROI.
+        
+    Returns
+    -------
+    tuple
+        Slice indices (y_slice, x_slice) for the background ROI.
+    """
     center_x = roi_center(tweezer_freq)[0]
     center_y = roi_center(tweezer_freq)[1]+y_offset
     return tuple((slice(round(center_y - roi_height_bg / 2), round(center_y + roi_height_bg / 2), 1),
@@ -111,6 +167,23 @@ def roi_slice_func_background(tweezer_freq, y_offset):
 start = time.time()
 
 def analyze_image(array, tweezer_freq_list, num_tweezers):
+    """Analyze an image array to count atoms in optical tweezers.
+    
+    Parameters
+    ----------
+    array : numpy.ndarray
+        The image array to analyze.
+    tweezer_freq_list : list
+        List of tweezer frequencies in MHz.
+    num_tweezers : int
+        Number of tweezers to analyze.
+        
+    Returns
+    -------
+    tuple
+        (atom_count, empty_list) where atom_count is the number of occupied tweezers
+        and empty_list contains indices of empty tweezers.
+    """
     counts_array = np.empty(num_tweezers)
     tweezer_freq_counter = 0
     upper_threshold = 500

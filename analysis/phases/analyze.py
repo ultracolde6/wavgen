@@ -1,3 +1,22 @@
+"""
+Phase Analysis Module
+
+This module provides analysis tools for studying phase effects in optical tweezer
+waveforms. It includes statistical analysis of phase optimization results and
+visualization tools for understanding phase-dependent performance.
+
+The module includes:
+- Statistical analysis of phase optimization results
+- Histogram generation for phase performance data
+- Animation tools for visualizing phase effects
+- Data loading and processing from HDF5 files
+- Performance comparison across different parameter sets
+
+This module is used for research to understand how phase relationships between
+frequency components affect waveform performance and to visualize optimization
+results from phase search algorithms.
+"""
+
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt

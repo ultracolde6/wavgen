@@ -1,3 +1,20 @@
+"""
+Application Example Script
+
+This script demonstrates a basic usage example of the wavgen package for generating
+and outputting waveforms to the Spectrum AWG hardware. It shows the typical workflow
+for creating a superposition waveform and controlling the output.
+
+The script includes:
+- Waveform definition and configuration
+- Card initialization and setup
+- Waveform loading and output
+- Basic user interaction for stopping the output
+
+This serves as a template for users to understand how to use the wavgen package
+for their own applications.
+"""
+
 import wavgen as wv
 import easygui
 

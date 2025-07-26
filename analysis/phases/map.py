@@ -1,3 +1,22 @@
+"""
+Phase Map Generation Module
+
+This module provides tools for generating and analyzing phase maps for optical
+tweezer waveforms. It includes algorithms for exploring phase space and
+visualizing the effects of phase relationships on waveform performance.
+
+The module includes:
+- Phase map generation for 2D phase space exploration
+- Power iteration algorithms for phase optimization
+- Phase map visualization and plotting tools
+- Parameter iteration across multiple configurations
+- File management for phase map storage and retrieval
+
+This module is used for research to systematically explore how phase relationships
+affect waveform performance and to generate visual representations of phase
+optimization landscapes.
+"""
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,6 +25,13 @@ from tqdm import tqdm
 
 
 def p_plot(pmap):
+    """Plot a phase map using pcolor.
+    
+    Parameters
+    ----------
+    pmap : numpy.ndarray
+        2D array representing the phase map to plot.
+    """
     npi = np.linspace(-2, 2, len(pmap))
 
     plt.figure(figsize=(8, 5))
@@ -24,6 +50,17 @@ def p_plot(pmap):
 
 
 def p_save(pmap, r, m):
+    """Save a phase map as an image file.
+    
+    Parameters
+    ----------
+    pmap : numpy.ndarray
+        2D array representing the phase map to save.
+    r : int
+        Resolution parameter for the filename.
+    m : int
+        Sampling parameter for the filename.
+    """
     npi = np.linspace(-2, 2, len(pmap))
 
     fig = plt.figure(figsize=(8, 5))
@@ -139,6 +176,21 @@ def pmap_3(T, sep, c, res=1000, M=1000):
 
 
 def iter_params(T, sep, c, res, M):
+    """Iterates through parameter combinations and saves phase maps.
+    
+    Parameters
+    ----------
+    T : list of int
+        List of trap numbers.
+    sep : list of float
+        List of trap separations (MHz).
+    c : list of int
+        List of center frequencies (MHz).
+    res : list of int
+        List of resolutions.
+    M : list of int
+        List of sampling frequencies.
+    """
     os.chdir('C:/Users/aronw/Desktop/wavgen/Docs/source/_static/maps/')
     for t in T:
         for s in sep:
@@ -169,6 +221,18 @@ def iter_params(T, sep, c, res, M):
 
 
 def dig(f):
+    """Extracts the fractional part of a number.
+    
+    Parameters
+    ----------
+    f : float
+        The number to extract the fractional part from.
+    
+    Returns
+    -------
+    float
+        The fractional part of the number.
+    """
     i = 0
     while f % 1:
         f = f * 10

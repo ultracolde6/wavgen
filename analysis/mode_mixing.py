@@ -1,3 +1,22 @@
+"""
+Mode Mixing Analysis Module
+
+This module provides analysis tools for studying signal mixing effects in optical
+tweezer systems. It includes algorithms for analyzing frequency mixing, phase
+modulation, and their effects on waveform performance.
+
+The module includes:
+- Signal mixing analysis for multiple frequency components
+- Phase modulation and its effects on waveform quality
+- Fourier analysis of mixed signals
+- Statistical analysis of mixing effects
+- Visualization tools for mixing analysis
+
+This module is used for research to understand how different frequency components
+interact and mix in optical tweezer systems, helping to optimize waveform
+designs for better performance.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from math import pi, sin
@@ -21,8 +40,21 @@ assert len(t) == N
 ## Helper Functions ##
 # noinspection PyPep8Naming
 def superimpose(w, phi, amp=None):
-    """
-        Calculates the combined waveform.
+    """Calculate the combined waveform from multiple frequency components.
+    
+    Parameters
+    ----------
+    w : list or numpy.ndarray
+        Angular frequencies of the components in radians/sample.
+    phi : list or numpy.ndarray
+        Phases of the components in radians.
+    amp : list or numpy.ndarray, optional
+        Amplitudes of the components. If None, uses unity amplitudes.
+        
+    Returns
+    -------
+    numpy.ndarray
+        Complex waveform resulting from the superposition of all components.
     """
     waveform = np.zeros(N)
     A = (np.ones(T) if amp is None else amp)
@@ -33,9 +65,20 @@ def superimpose(w, phi, amp=None):
 
 
 def mix_signals(attr_0):
-    """
-        Assumes the input array is sorted.
-        Returns the 1st & 2nd order mixed values.
+    """Calculate first and second order signal mixing products.
+    
+    Assumes the input array is sorted. Returns the 1st & 2nd order mixed values.
+    
+    Parameters
+    ----------
+    attr_0 : list or numpy.ndarray
+        Sorted array of attribute values (e.g., frequencies).
+        
+    Returns
+    -------
+    tuple
+        (attr_1, attr_2) where attr_1 contains first-order mixing products
+        and attr_2 contains second-order mixing products.
     """
     # 1st-Order Signal Mixing #
     attr_1 = np.array([attr_0[i] - attr_0[j] for i in range(1, T) for j in range(i)])
@@ -51,6 +94,17 @@ def mix_signals(attr_0):
 
 
 def loop_phase_configurations(amps, rates, w):
+    """Loop through different phase configurations and analyze mixing effects.
+    
+    Parameters
+    ----------
+    amps : list or numpy.ndarray
+        Amplitude values to test.
+    rates : list or numpy.ndarray
+        Rate values for phase modulation.
+    w : list or numpy.ndarray
+        Angular frequencies of the components.
+    """
     _, w_mix = mix_signals(w)
 
     for i, r in enumerate(rates):

@@ -1,3 +1,22 @@
+"""
+Sweep Analysis Module
+
+This module provides analysis tools for evaluating the performance of sweep waveforms
+and optimizing phase configurations. It includes algorithms for phase optimization
+and statistical analysis of waveform performance.
+
+The module includes:
+- Phase optimization algorithms for superposition waveforms
+- Statistical analysis of waveform performance
+- Random phase sampling and evaluation
+- Power calculation and scoring functions
+- Data collection and analysis for sweep waveforms
+
+This module is used for research and development to understand the performance
+characteristics of different waveform configurations and optimize parameters
+for optical tweezer experiments.
+"""
+
 from waveform import *
 
 

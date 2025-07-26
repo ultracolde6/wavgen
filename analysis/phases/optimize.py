@@ -1,3 +1,23 @@
+"""
+Phase Optimization Module
+
+This module provides advanced optimization algorithms for finding optimal phase
+configurations in optical tweezer waveforms. It includes parallel processing
+capabilities and statistical analysis tools for phase optimization.
+
+The module includes:
+- Parallel phase optimization algorithms
+- Random phase sampling and evaluation
+- Power function calculation and scoring
+- Statistical analysis of optimization results
+- HDF5 data storage for optimization results
+- Performance timing and analysis tools
+
+This module is used for research to systematically find optimal phase configurations
+for optical tweezer waveforms, using parallel processing to efficiently explore
+large parameter spaces.
+"""
+
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +35,18 @@ wave = None
 
 ## Helper ##
 def dig(f):
+    """Extract the fractional part of a number.
+    
+    Parameters
+    ----------
+    f : float
+        The number to extract the fractional part from.
+        
+    Returns
+    -------
+    float
+        The fractional part of the number.
+    """
     i = 0
     while f % 1:
         f = f * 10
@@ -46,6 +78,26 @@ def power_func(T, sep, c):
 
 
 def power(waves, wave, queue, rolls, gtr):
+    """Calculate power scores for multiple random phase sets.
+    
+    Parameters
+    ----------
+    waves : numpy.ndarray
+        Wave components for all frequencies except the first.
+    wave : numpy.ndarray
+        Wave component for the first frequency.
+    queue : multiprocessing.Queue or None
+        Queue for returning results to parent process. If None, returns directly.
+    rolls : int
+        Number of random phase sets to sample.
+    gtr : numpy.random.Generator
+        Random number generator.
+        
+    Returns
+    -------
+    tuple or None
+        If queue is None, returns (best_phases, scores). Otherwise, puts results in queue.
+    """
     assert rolls <= max_rolls, "Something fishy..."
     phase_sets = gtr.uniform(high=2*pi, size=(rolls, 1, waves.shape[1]))
     dat = np.array([waves, ]*rolls)
@@ -215,10 +267,25 @@ def find_optimal_rolls(ntraps, separations, centers, rolls):
 
 
 def find_optimal_params(ntraps, separations, centers, rolls):
-    """ Given a waveform parameter set,
-        rolls the dice a number of times & samples random phase sets.
-
-        Returns the top score & the top scoring set.
+    """Find optimal phases for multiple parameter combinations using parallel processing.
+    
+    Given lists of potential parameters, for each possible combination of parameters,
+    rolls the dice a number of times & samples random phase sets.
+    
+    Parameters
+    ----------
+    ntraps : list of int
+        List of trap numbers to test.
+    separations : list of float
+        List of trap separations (MHz) to test.
+    centers : list of float
+        List of center frequencies (MHz) to test.
+    rolls : int
+        Number of random phase sets to sample for each configuration.
+        
+    Note
+    ----
+    This function parallelizes on parameter combinations.
     """
     num_configs = len(separations) * len(centers)
     entries = sum(ntraps)*num_configs

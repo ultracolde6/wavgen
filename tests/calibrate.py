@@ -1,3 +1,21 @@
+"""
+Camera Calibration Test Script
+
+This script provides tools for calibrating camera settings and testing camera
+integration with the wavgen system. It includes exposure adjustment and
+camera feedback testing for optical tweezer experiments.
+
+The script includes:
+- Camera initialization and setup
+- Exposure adjustment algorithms
+- Live video streaming for calibration
+- Integration testing with waveform output
+- Camera parameter optimization
+
+This script is used for system setup and calibration to ensure proper camera
+functionality for optical tweezer experiments.
+"""
+
 import wavgen.constants
 from instrumental import instrument, u
 import matplotlib.pyplot as plt
