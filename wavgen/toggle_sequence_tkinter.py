@@ -21,7 +21,7 @@ try:
     from wavgen.constants import *
     HARDWARE_AVAILABLE = True
 except ImportError:
-    print("Warning: wavgen module not found. Using simulated mode.")
+    print("Warning: wavgen module not found at import level. Using simulated mode.")
     HARDWARE_AVAILABLE = False
     # Fallback simulated classes
     class Card:
@@ -501,60 +501,44 @@ Process: {status.get('process_status', 'none')}
             messagebox.showerror("Error", error_msg)
             
     def start_static_mode(self):
-        """Start static superposition mode - always try real hardware first."""
+        """Start static superposition mode. Essentially just activate play_superposition like we usually do"""
         try:
             # Stop any existing process first
             if self.current_process or self.running:
                 self.logger.info("Stopping existing process before starting static mode...")
                 self.stop_current_process()
                 time.sleep(0.5)  # Brief pause for cleanup
-                
+
             self.logger.info("Starting static superposition mode...")
-            
+
             # Update parameters first
             self.update_parameters()
-            
-            # Always try real hardware first
-            try:
-                folder_name = self.static_params['folder_name']
-                filename = Path(folder_name, self.static_params['filename'])
-                
-                # Check if file exists
-                if os.access(filename, os.F_OK):
-                    print('Read file!')
-                    A = from_file_simple(filename, 'A')
-                else:
-                    raise FileNotFoundError(f"File {filename} not found")
-                
-                # Initialize card
-                dwCard = wavgen.Card()
-                
-                # Setup channels
-                dwCard.setup_channels(amplitude=80, use_filter=self.static_params['use_filter'])
-                
-                # Load waveforms
-                dwCard.load_waveforms(A)
-                print('outputting')
-                dwCard.wiggle_output(duration=0)
-                
-                self.logger.info("Real hardware static mode started successfully")
-                
-            except Exception as e:
-                self.logger.warning(f"Real hardware failed: {e}")
-                self.logger.info("Falling back to simulated static mode")
-                
-                # Fallback to simulated
-                if self.card:
-                    self.card.setup_channels(amplitude=80, use_filter=self.static_params['use_filter'])
-                    waveform = Waveform(f"static_{self.static_params['filename']}")
-                    self.card.load_waveforms(waveform)
-                    self.card.wiggle_output()
-                self.logger.info("Simulated static mode started")
-                
+
+            folder_name = self.static_params['folder_name']
+            filename = Path(folder_name, self.static_params['filename'])
+
+            # Check if file exists (same as play_superposition.py)
+            if os.access(filename, os.F_OK):
+                print('Read file!')
+                A = from_file_simple(filename, 'A')
+            else:
+                raise FileNotFoundError(f"File {filename} not found")
+
+            # Initialize card exactly like play_superposition.py
+            dwCard = wavgen.Card()
+
+            # Setup channels with exact same parameters
+            dwCard.setup_channels(amplitude=80, use_filter=self.static_params['use_filter'])
+
+            # Load waveforms exactly like original
+            dwCard.load_waveforms(A)
+            print('outputting')
+            dwCard.wiggle_output(duration=0)
+
+            self.logger.info("Static mode started successfully (matches play_superposition.py)")
             self.current_mode = "static"
             self.running = True
-            self.logger.info("Static mode started successfully.")
-            
+
         except Exception as e:
             error_msg = f"Error starting static mode: {e}"
             self.logger.error(error_msg)
@@ -578,7 +562,7 @@ Process: {status.get('process_status', 'none')}
             # Update parameters first
             self.update_parameters()
             
-            # Create temporary script with current parameters
+            # Create temporary script with current parameters, essentially just usual sorting but generated in a helper file
             script_content = self.create_sorting_script()
             temp_script_path = "temp_sorting_script.py"
             
@@ -586,7 +570,7 @@ Process: {status.get('process_status', 'none')}
                 with open(temp_script_path, 'w') as f:
                     f.write(script_content)
                 
-                # Start sorting process with automatic restart logic (like runner.py)
+                # pretty much just runner
                 def run_sorting_with_restart():
                     while self.running and self.current_mode == "sorting":
                         try:
@@ -600,7 +584,6 @@ Process: {status.get('process_status', 'none')}
                                 text=True
                             )
                             
-                            # Wait for process to complete
                             process.wait()
                             
                             # If we get here, process has died - restart it
@@ -666,18 +649,18 @@ ntraps = {self.sorting_params['ntraps']}
 AXA_list = {self.sorting_params['AXA_list']}
 drop_list = {self.sorting_params['drop_list']}
 
-# Calculate tweezer frequencies exactly like original
+# Calculate tweezer frequencies
 tweezer_freq_list = [startfreq + j * spacing for j in range(ntraps)]
 num_tweezers = len(tweezer_freq_list)
 N_cycle = np.lcm(len(AXA_list), len(drop_list))
 
-# Include sorting waveforms exactly like original
+# Include sorting waveforms 
 sort_list_L = [f'sweep_{{num}}.h5' for num in range(1, ntraps)]
 sort_list_R = [f'sweep_{{num}}R.h5' for num in range(1, ntraps)]
 sort_list = np.concatenate((sort_list_L, sort_list_R))
 wf_list = []
 
-# Load waveforms exactly like original
+# Load waveforms
 for filename in sort_list:
     if os.access(Path(path_folder, filename), os.F_OK):
         wav_temp = utilities.from_file(Path(path_folder, filename), 'AB')
@@ -698,10 +681,10 @@ for filename in flattened_AXA_list:
 
 segment_list = range(len(wf_list))
 
-# Initialize card exactly like original
+# Initialize card 
 hCard = spcm_hOpen(create_string_buffer(b'/dev/spcm0'))
 
-# Setup channels exactly like original
+# Setup channels 
 def setup_channels(amplitude=DEF_AMP, ch0=True, ch1=False, use_filter=False):
     if ch0 and ch1:
         print('Multi-Channel Support Not Yet Supported!')
@@ -744,11 +727,11 @@ def _write_segment(wavs, pv_buf, pn_buf, offset=0):
         spcm_dwDefTransfer_i64(hCard, SPCM_BUF_DATA, SPCM_DIR_PCTOCARD, int32(0), pv_buf, uint64(0), uint64(size * 2))
         dwError = spcm_dwSetParam_i32(hCard, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA)
 
-# Setup channels and clock exactly like original
+# Setup channels and clock 
 setup_channels(amplitude=85, use_filter=False)
 _setup_clock()
 
-# Set up card mode exactly like original
+# Set up card mode 
 start_step = 0
 max_segments = len(wf_list)
 spcm_dwSetParam_i32(hCard, SPC_CARDMODE, SPC_REP_STD_SEQUENCE)
@@ -759,7 +742,7 @@ spcm_dwSetParam_i32(hCard, SPC_TRIG_EXT0_MODE, SPC_TM_POS)
 spcm_dwSetParam_i32(hCard, SPC_SEQMODE_MAXSEGMENTS, max_segments)
 spcm_dwSetParam_i32(hCard, SPC_SEQMODE_STARTSTEP, start_step)
 
-# Create buffers and write segments exactly like original
+# Create buffers and write segments 
 pv_buf_list = []
 pn_buf_list = []
 for j in range(len(segment_list)):
@@ -772,7 +755,7 @@ for j in range(len(segment_list)):
     spcm_dwSetParam_i32(hCard, SPC_SEQMODE_SEGMENTSIZE, wf_list[j].SampleLength)
     _write_segment([wf_list[j]], pv_buf_list[j], pn_buf_list[j], offset=0)
 
-# Set up static configuration exactly like original
+# Set up static configuration 
 lStep = 0
 llSegment = 2*num_tweezers-2
 llLoop = 1
@@ -1355,7 +1338,7 @@ def main():
     """Main function to run the Tkinter-based Wavgen Controller."""
     print("Initializing  Wavgen Controller...")
     
-    # Always try real hardware by default
+    # Always try real hardware by default. simulation is just for me testing gui
     controller = TkinterSequenceController(use_simulation=False)
     
     try:
