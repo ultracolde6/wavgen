@@ -305,25 +305,13 @@ class TestEventHandler(PatternMatchingEventHandler):
 
                     else:
                         lStep = 2 * num_tweezers + 100
-
-                        if hold_drop:
-                            llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
-                            llLoop = 1
-                            llNext = 0
-                            llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                        else:
-                            llSegment = 2 * num_tweezers - 2  # the static waveform
-                            llLoop = 1
-                            llNext = 0
-                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-
-
+                        llSegment = 2 * num_tweezers - 2  # the static waveform
+                        llLoop = 1
+                        llNext = 0
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        # print(f'{loop_num + 3}th trig')
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
                 else:
                     lStep = 1  # current step is step 1
 
@@ -506,7 +494,6 @@ class TestEventHandler_1(PatternMatchingEventHandler):
                     else:
                         lStep = 2 * num_tweezers + 100
                         llSegment = 2 * num_tweezers - 2  # the static waveform
-                        # llSegment = 2 * num_tweezers - 2  # the static waveform
                         llLoop = 1
                         llNext = 0
                         llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
@@ -623,7 +610,6 @@ if __name__ == '__main__':
     # path_folder = 'waveforms_100_40Twz_5lambda_hysteresis'
 
     multi_trig = False #if False (True) there should be 3 (5) tweezer_RF_trigs in cicero sequence;
-    hold_drop = False # True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
     # AXA_list = [
     #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5', 'sweep_from_5,5lambda_Spock_node_Delta=0l.h5']
     # ]
@@ -755,11 +741,11 @@ if __name__ == '__main__':
     flattened_AXA_list = [item for row in AXA_list for item in row]
 
     # drop_list = ['drop_2_twz14,26.h5', 'drop_1_twz14.h5','drop_1_twz26.h5']
-    # drop_list = ['drop_2_twz15,25_NPM_Power_Adjusted.h5']
+    # drop_list = ['drop_1_twz19.h5']
     # drop_list = ['drop_2_twz18,22.h5']
     # drop_list = ['static.h5','drop_8.h5','drop_10.h5','drop_12.h5','drop_14.h5','drop_16.h5','drop_18.h5']
     # drop_list=['drop_16.h5','drop_16.h5','drop_14.h5','drop_12.h5','drop_12.h5']
-    # drop_list = ['static.h5']
+    drop_list = ['static.h5']
     # drop_list = ['drop_2_twz15,25.h5']
     # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
     # drop_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5']
@@ -771,7 +757,7 @@ if __name__ == '__main__':
     # drop_list = ['drop_1_twz10.h5', 'drop_1_twz30.h5']
     # drop_list = ['drop_1_twz25.h5']
     # drop_list = ['drop_1_twz20.h5']
-    drop_list = ['static.h5']
+    # drop_list = ['static.h5']
     # drop_list = ['drop_22.h5','drop_1_twz20.h5']
     #
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
