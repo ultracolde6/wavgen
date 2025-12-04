@@ -15,7 +15,7 @@ def gen_waveform_LtoR(folder_name, ntraps, sweep_num):
     import os
     import numpy as np
     from pathlib import Path
-    name_temp = 'sweep_{}.h5'.format(sweep_num)
+    name_temp = '{sweep_}.h5'.format(sweep_num)
     filename = Path(folder_name, name_temp)
     # If we have already computed the Waveforms...
     # if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.
@@ -34,8 +34,8 @@ def gen_waveform_LtoR(folder_name, ntraps, sweep_num):
         phasesA = []
         ####################for L to R:########################
 
-        spacing = 0.800E6
-        startfreq = 88E6 - spacing  # need to -spacing for L waveforms, don't for R waveforms
+        spacing = 0.640E6
+        startfreq = 79.04E6 - spacing  # need to -spacing for L waveforms, don't for R waveforms
 
         f_list = [startfreq + j * spacing for j in range(ntraps)]
         for i in range(ntraps):
@@ -90,8 +90,8 @@ def gen_waveform_RtoL(folder_name, ntraps, sweep_num):
         phasesA = []
         ####################for L to R:########################
 
-        spacing = 0.800E6
-        startfreq = 88E6 # need to -spacing for L waveforms, don't for R waveforms
+        spacing = 0.64E6
+        startfreq = 79.04E6 # need to -spacing for L waveforms, don't for R waveforms
         f_list = [startfreq + j * spacing for j in range(ntraps)]
 
         for i in range(ntraps):
@@ -134,8 +134,8 @@ if __name__ == '__main__':
     # view=rc.load_balanced_view()
     view=rc[:]
 
-    ntraps = 41  # this is the num of tweezers we want, plus 1
-    folder_name = "waveforms_160_40Twz_5lambda_vpara_cos100"
+    ntraps = 71  # this is the num of tweezers we want, plus 1
+    folder_name = "four lambda spacing - 70 tweezers"
 
     # create a new folder for waveforms to be saved to, if it doesn't already exist
 
@@ -152,8 +152,8 @@ if __name__ == '__main__':
         done_results.append(sweep_num)
 
 
-    # for sweep_num in np.arange(1):
-    #     ar = gen_waveform_RtoL(folder_name, ntraps, sweep_num)
-    #     done_results.append(sweep_num)
+    for sweep_num in np.arange(ntraps-2)+1:
+        ar = view.apply_async(gen_waveform_LtoR, folder_name, ntraps, sweep_num)
+        done_results.append(sweep_num)
 
     print(done_results)

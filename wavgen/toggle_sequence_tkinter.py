@@ -10,17 +10,35 @@ import queue
 import numpy as np
 from pathlib import Path
 import psutil
+from pathlib import Path
+
+# Add the parent directory to Python path so wavgen can be imported
+import os, sys
+sys.path.append('./')
 
 # Import real wavgen modules
 try:
-    import wavgen
-    from wavgen import Card, Waveform, utilities
-    from wavgen.waveform import Superposition
-    from wavgen.utilities import from_file_simple
+    import wavgen.constants
+    from wavgen import *
+    import easygui
+    from wavgen.utilities import *
     from wavgen.spectrum import *
     from wavgen.constants import *
-    HARDWARE_AVAILABLE = True
-except ImportError:
+    import time
+    # from time import time, sleep
+    from watchdog.observers import Observer
+    from watchdog.events import PatternMatchingEventHandler
+    from pathlib import Path
+    import datetime
+    import h5py
+    import numpy as np
+    from image_analysis import analyze_image
+    import shutil
+    import os.path
+    import datetime
+
+except Exception as e:
+    print(e)
     print("Warning: wavgen module not found at import level. Using simulated mode.")
     HARDWARE_AVAILABLE = False
     # Fallback simulated classes
@@ -87,22 +105,22 @@ class TkinterSequenceController:
         self.card = None
         self.hardware_available = False
         
-        try:
-            # Always try real hardware first
-            if HARDWARE_AVAILABLE:
-                self.card = wavgen.Card()
-                self.hardware_available = True
-                self.logger.info("Real hardware initialized successfully")
-            else:
-                raise ImportError("wavgen module not available")
-                
-        except Exception as e:
-            # Fallback to simulated card on any exception
-            self.logger.warning(f"Real hardware failed: {e}")
-            self.logger.info("Falling back to simulated hardware")
-            self.card = Card()  # Use simulated card
-            self.hardware_available = False
-            self.use_simulation = True
+        # try:
+        #     # Always try real hardware first
+        #     if HARDWARE_AVAILABLE:
+        #         self.card = wavgen.Card()
+        #         self.hardware_available = True
+        #         self.logger.info("Real hardware initialized successfully")
+        #     else:
+        #         raise ImportError("wavgen module not available")
+        #
+        # except Exception as e:
+        #     # Fallback to simulated card on any exception
+        #     self.logger.warning(f"Real hardware failed: {e}")
+        #     self.logger.info("Falling back to simulated hardware")
+        #     self.card = Card()  # Use simulated card
+        #     self.hardware_available = False
+        #     self.use_simulation = True
         
         # Create main window
         self.root = tk.Tk()
@@ -1257,6 +1275,7 @@ if __name__ == "__main__":
                 if self.card and hasattr(self.card, 'is_running') and self.card.is_running:
                     try:
                         self.card.stop_output()
+                        self.card.stop_card()
                         self.logger.info("Static mode card output stopped.")
                     except Exception as e:
                         self.logger.warning(f"Error stopping static card output: {e}")
@@ -1266,6 +1285,7 @@ if __name__ == "__main__":
                     if HARDWARE_AVAILABLE:
                         dwCard = wavgen.Card()
                         dwCard.stop_output()
+                        self.card.stop_card()
                         self.logger.info("Real hardware static output stopped.")
                 except Exception as e:
                     self.logger.warning(f"Error stopping real hardware: {e}")

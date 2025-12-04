@@ -10,42 +10,44 @@ from pathlib import Path
 if __name__ == '__main__':
     for fraction in [0]:
         # bias=1/fraction
-        sweep_time=0.16
-        sweep_mode="shiftedlinear"
+        sweep_time = 0.16
+        sweep_mode = 'cosine'
         bias=0
-        ntraps = 40
+        ntraps = 46
         shift_Lambda = 0 # 2 + 1 / 2 #+ 1 / 16
         Lambda = 0.16E6
         shift = shift_Lambda*Lambda
-        CenterFreq = 104E6
-        spacing = 5*Lambda
+        CenterFreq = 101.44E6
+        spacing = 4*Lambda
         com_shift = 0* Lambda/4
-        startfreq = CenterFreq - 20*spacing  # 86.4E6 + 0.04E6 #88.04E6
+        startfreq = CenterFreq - ntraps/2 * spacing  # 86.4E6 + 0.04E6 #88.04E6
 
         # freq_B = [88E6 +0.04E6+ 0.8E6*j for j in range(ntraps)]
-        freq_B = [startfreq + com_shift + spacing*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
+        freq_A = [startfreq + com_shift + spacing*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
+        # freq_B = [startfreq + com_shift + spacing*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
 
         ##################################################
         # uniform stretch
-        # CenterFreq = 104E6
-        # spacingB = 5 *Lambda
-        # com_shift = 1 * Lambda/4
-        # startfreqB = CenterFreq - 20*spacingB  # 86.4E6 + 0.04E6 #88.04E6
-        #
-        # # freq_B = [88E6 +0.04E6+ 0.8E6*j for j in range(ntraps)]
+        CenterFreq = 101.44E6
+        spacingB = 5 * Lambda
+        com_shift =  0*Lambda/4
+        startfreqB = CenterFreq - ntraps/2 * spacingB  # 86.4E6 + 0.04E6 #88.04E6
+
+        # freq_B = [88E6 +0.04E6+ 0.8E6*j for j in range(ntraps)]
+        freq_B = [startfreqB + com_shift + spacingB*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
         # freq_A = [startfreqB + com_shift + spacingB*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
 
         ####################################################
         # two group
-        sym_shift = 0 * Lambda
-        left_shift = -0.25 * Lambda - sym_shift
-        right_shift = 0.25 * Lambda + sym_shift
-
-        freq_init = np.array([startfreq + com_shift + j * spacing for j in range(ntraps)])
-        freq_A = freq_init * 1.0
-
-        freq_A[:int(ntraps / 2)] = freq_init[:int(ntraps / 2)] + left_shift
-        freq_A[int(ntraps / 2):] = freq_init[:int(ntraps / 2)] + right_shift
+        # sym_shift = 0 * Lambda
+        # left_shift = -0.25 * Lambda - sym_shift
+        # right_shift = 0.25 * Lambda + sym_shift
+        #
+        # freq_init = np.array([startfreq + com_shift + j * spacing for j in range(ntraps)])
+        # freq_A = freq_init * 1.0
+        #
+        # freq_A[:int(ntraps / 2)] = freq_init[:int(ntraps / 2)] + left_shift
+        # freq_A[int(ntraps / 2):] = freq_init[:int(ntraps / 2)] + right_shift
 
 
 
@@ -72,7 +74,8 @@ if __name__ == '__main__':
         # print(shift_list)
         # freq_A = shift_list + freq_A
         # folder_name = 'waveforms_100_40Twz_5lambda_hysteresis'
-        folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
+        # folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
+        folder_name = 'four lambda spacing - 70 tweezers'
         # create a new folder for waveforms to be saved to, if it doesn't already exist
 
 
@@ -82,7 +85,8 @@ if __name__ == '__main__':
             os.mkdir(f'{folder_name}')
             print(f'directory created')
 
-        name_temp = f'sweep_5lambda_twogroup_Delta=0l_back.h5'
+        # name_temp = f'70tweezers_sweep_to_halfint_node.h5'
+        name_temp = f'46tweezers_sweep_to_5L_antinode.h5'
         # name_temp = f'sweep_4,5to5lambda_fromleft.h5'
         filename = Path(folder_name, name_temp)
         # If we have already computed the Waveforms...
@@ -97,6 +101,21 @@ if __name__ == '__main__':
             print('computing new file')
             phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
             phasesA = np.cumsum(phase_diff)
+
+
+            ################## the following minimizes cost function 3 ##########################
+            # phasesA = np.array([ -1.14254421e-01, -1.91730193e-01, 8.48065418e-02, 2.04235594e-01,
+            #                      7.27589378e-01, 1.64693962e+00, 2.23424824e+00, 3.89016556e+00,
+            #                      4.36346004e+00, 5.91085170e+00, 7.40510848e+00, 8.89809238e+00,
+            #                      1.05167619e+01, 1.25341858e+01, 1.47477671e+01, 1.72211853e+01,
+            #                      1.95716544e+01, 2.18883146e+01, 2.45402847e+01, 2.75826692e+01,
+            #                      3.06437088e+01, 3.37234011e+01, 3.71935083e+01, 4.09989265e+01,
+            #                      4.47705366e+01, 4.84191976e+01, 5.23276925e+01, 5.64323475e+01,
+            #                      6.09357548e+01, 6.55648507e+01, 7.01926692e+01, 7.47673572e+01,
+            #                      8.04161415e+01, 8.48823005e+01, 9.04170711e+01, 9.56197995e+01,
+            #                      1.01218521e+02, 1.07221170e+02, 1.13066712e+02, 1.19266267e+02 ])
+            #######################################################################################
+
             phasesB = phasesA
             # phase_diff_1 = np.arange(int(ntraps / 2)) / (int(ntraps / 2) - 1) * 2 * np.pi
             # phases1 = np.cumsum(phase_diff_1)

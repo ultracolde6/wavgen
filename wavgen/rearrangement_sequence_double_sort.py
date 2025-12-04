@@ -572,15 +572,15 @@ if __name__ == '__main__':
 
     multi_trig = False
 
-    AXA_list = [
-        ['sweep_5to5,5lambda_shifted_Lo4.h5', 'static_5,5lambda_shifted_Lo4.h5',
-         'sweep_5,5to5lambda_shifted_Lo4.h5']
-                ]
-
     # AXA_list = [
-    #     ['static.h5', 'static.h5',
-    #      'static.h5']
+    #     ['sweep_5to5,5lambda_shifted_Lo4.h5', 'static_5,5lambda_shifted_Lo4.h5',
+    #      'sweep_5,5to5lambda_shifted_Lo4.h5']
     #             ]
+
+    AXA_list = [
+        ['static.h5', 'static.h5',
+         'static.h5']
+                ]
     # AXA_list = [
     #             ['sweep_to_half_shifted_Lo2_node_dualbias_Lo0.h5', 'static_half-shifted_Lo2_dualbias_Lo0.h5','sweep_from_half_shifted_Lo2_node_dualbias_Lo0.h5']
     #             ]
@@ -614,10 +614,10 @@ if __name__ == '__main__':
     # ]
     flattened_AXA_list = [item for row in AXA_list for item in row]
 
-    # drop_list = ['static.h5']
+    drop_list = ['static.h5']
     # drop_list = ['drop_22']
-    # drop_list = ['drop_2_twz18,22.h5']
-    drop_list = ['drop_3_14,15,16.h5','drop_3_24,25,26.h5']
+    # drop_list = ['drop_2_twz15,25.h5']
+    # drop_list = ['drop_1_twz15.h5']
 
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
     # static_list = ['static.h5']

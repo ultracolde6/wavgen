@@ -85,12 +85,12 @@ import time
 #     return tuple((slice(round(center_y - roi_height / 2), round(center_y + roi_height / 2), 1), \
 #                   slice(round(center_x - roi_width / 2), round(center_x + roi_width / 2), 1)))
 
-roi_width = 16
-roi_height = 16
+roi_width = 14
+roi_height = 14
 roi_area = roi_width * roi_width
 
-roi_width_bg = 16
-roi_height_bg = 16
+roi_width_bg = 14
+roi_height_bg = 14
 roi_area_bg = roi_width_bg * roi_height_bg
 
 
@@ -109,11 +109,12 @@ def roi_center(tweezer_freq):
         [center_x, center_y] coordinates for the ROI center.
     """
     ### weird drift ROI
-    # center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 443)) / 2
-    # center_y = round(2 * (-0.4 * (tweezer_freq - 100) + 72)) / 2
+    # center_x = round(2 * (0.020 * (tweezer_freq - 104)**2+ 26.6 * (tweezer_freq - 100) + 542)) / 2
+    center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 545)) / 2
+    center_y = round(2 * (-0.45 * (tweezer_freq - 100) + 69)) / 2
     ### 30 tweezer eight lambda roi
-    center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 437)) / 2
-    center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 72)) / 2
+    # center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 541)) / 2
+    # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 72)) / 2
     ### 50 tweezer four lambda roi
     # center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 443)) / 2
     # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 70)) / 2
@@ -186,7 +187,7 @@ def analyze_image(array, tweezer_freq_list, num_tweezers):
     """
     counts_array = np.empty(num_tweezers)
     tweezer_freq_counter = 0
-    upper_threshold = 500
+    upper_threshold = 700
     # background_counts = int(np.sum(array[roi_slice_func_background(tweezer_freq_list[20], 20)]))# + 250 #roi_area*91.01#105
     for tweezer_freq in tweezer_freq_list:
         counts_array[tweezer_freq_counter] = np.sum(

@@ -46,35 +46,28 @@ class TestEventHandler(PatternMatchingEventHandler):
         if path != self.last_created:
             self.last_created = path
             # tic = time.perf_counter()
-            # print(f'{event.src_path} has been created!')
-            time.sleep(0.005)
+            print(f'{event.src_path} has been created!')
+            time.sleep(0.25)
 
             try:
-                curr_time = time.perf_counter()
-                # print("Current time: ", curr_time)
-                time_since_trig = curr_time - tic_1
-                # print("Time since trigger: ", time_since_trig)
                 hf = h5py.File(f'{event.src_path} ', 'r')
             except:
-                time.sleep(0.005)
+                time.sleep(0.25)
                 hf = h5py.File(f'{event.src_path} ', 'r')
                 print('exception')
-            # print('read file')
+            print('read file')
             im_array = np.array(hf['frame-00'])
             hf.close()
             atom_count, empty_list = analyze_image(im_array, tweezer_freq_list, num_tweezers)
-            print("Total atoms detected: ", atom_count)
-            num_empty = len(empty_list)
-            print("Total empty tweezers detected: ", num_empty)
-            # print(atom_count, empty_list)
+            print(atom_count, empty_list)
             tic_2 = time.perf_counter()
             try:
-                print('Elapsed time (ms): ', np.round(1000*(tic_2-tic_1),3))
+                print('tic_2-tic_1', tic_2-tic_1)
                 time_diff = tic_2-tic_1
             except:
                 time_diff = 0
             if time_diff>0.8:
-                print('bad shot occurred due to slow time, skipping')
+                print('skipping')
                 self.bad_shot_list.append(self.shot_counter+1)
                 lStep = 1
                 llSegment = 2 * num_tweezers - 2
@@ -121,10 +114,10 @@ class TestEventHandler(PatternMatchingEventHandler):
 
                     # now divide into left and right sides of the boundary
                     empty_list_reduced=np.sort(empty_list_reduced)
-                    # print('empty_list_reduced:', empty_list_reduced)
+                    print('empty_list_reduced:', empty_list_reduced)
                     num_empty = len(empty_list)
                     boundary = empty_list[int(num_empty / 2)]
-                    # print('boundary:', boundary)
+                    print('boundary:', boundary)
                     mask_L = empty_list_reduced <= boundary
                     mask_R = empty_list_reduced > boundary
                     empty_list_L = empty_list_reduced[mask_L]
@@ -136,8 +129,8 @@ class TestEventHandler(PatternMatchingEventHandler):
                         if i < num_tweezers-1:
                             segment_queue_R.append(segment_list[2*(num_tweezers-1)-i-1])
                     segment_queue_R = np.flip(segment_queue_R)
-                    # print(f'segment_queue_L = {segment_queue_L}')
-                    # print(f'segment_queue_R = {segment_queue_R}')
+                    print(f'segment_queue_L = {segment_queue_L}')
+                    print(f'segment_queue_R = {segment_queue_R}')
 
                     if len(segment_queue_L) > 0:
                         print('left sorting')
@@ -251,7 +244,52 @@ class TestEventHandler(PatternMatchingEventHandler):
 
 
                     ##################### Start of AXA ############################
-                    if multi_trig == True:
+                    if multi_trig == True and hold_drop:
+                        lStep = 2 * num_tweezers + 100
+                        llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        # llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 22
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        # print(f'{loop_num + 3}th trig')
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 22
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter))  # 2 * num_tweezers  # sweep to 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 23
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 23
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 1)  # 2 * num_tweezers + 1  # 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 24  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        toc1 = time.perf_counter()
+                        # print(toc1 - tic1)
+                        lStep = 2 * num_tweezers + 24
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 2)  # 2 * num_tweezers + 2  # sweep back by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 25  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition =  SPCSEQ_ENDLOOPALWAYS # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 25
+                        llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        # llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                        llLoop = 1
+                        llNext = 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    elif multi_trig == True:
                         lStep = 2 * num_tweezers + 100
                         llSegment = 2 * num_tweezers - 2  # the static waveform
                         llLoop = 1
@@ -315,36 +353,10 @@ class TestEventHandler(PatternMatchingEventHandler):
 
                         if hold_drop:
                             llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            # llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
                             llLoop = 1
                             llNext = 0
-                            llCondition = SPCSEQ_ENDLOOPONTRIG
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                        elif hold_drop_sweep:
-                            print('hold drop sweep')
-                            llSegment = 2 * num_tweezers - 1 + self.drop_counter  # the drop waveform
-                            llLoop = 1
-                            llNext = 2 * num_tweezers + 101
-                            llCondition = SPCSEQ_ENDLOOPONTRIG
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-
-                            lStep=2 * num_tweezers + 101
-                            llSegment = 2 * num_tweezers - 1 + len(drop_list) + len(flattened_AXA_list)   # sweep
-                            llLoop = 1
-                            llNext = 2 * num_tweezers + 102
-                            llCondition = SPCSEQ_ENDLOOPALWAYS
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-
-                            lStep = 2 * num_tweezers + 102
-                            llSegment = 2 * num_tweezers - 1 + len(drop_list) +len(flattened_AXA_list)+1 #
-                            llLoop = 1
-                            llNext = 0
-                            llCondition = SPCSEQ_ENDLOOPONTRIG
+                            llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
                             # print(f'{loop_num + 3}th trig')
                             llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                             spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
@@ -372,7 +384,7 @@ class TestEventHandler(PatternMatchingEventHandler):
                 # toc = time.perf_counter()
                 print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
                 self.current_time = time.time()
-                # print("********************************")
+                print("********************************")
 
                 # date_dir_log = datetime.datetime.now().strftime("%Y\%m\%d")
                 # DIR_DATA_log = Path('X:/', 'expdata-e6', 'data', date_dir_log, "run_test")
@@ -387,9 +399,9 @@ class TestEventHandler(PatternMatchingEventHandler):
                 #     log_file.write(log_entry)
                 ##########################################################
 
-                # print(f'Cycle {self.drop_counter:0.0f} of {self.drop_num:0.0f} in drop waveforms')
-                # print(f'Cycle {self.AXA_counter:0.0f} of {self.AXA_num:0.0f} in AXA waveforms')
-                # print("*******************************")
+                print(f'Cycle {self.drop_counter:0.0f} of {self.drop_num:0.0f} in drop waveforms')
+                print(f'Cycle {self.AXA_counter:0.0f} of {self.AXA_num:0.0f} in AXA waveforms')
+                print("*******************************")
                 # if (self.current_time - self.previous_time > 13):
                 #     print('missed trigger!')
                 #     self.i_counter = (self.i_counter + 2) % self.Cycle_num
@@ -412,7 +424,7 @@ class TestEventHandler(PatternMatchingEventHandler):
                 self.shot_counter += 1
                 print('shot', self.shot_counter)
                 toc = time.perf_counter()
-                print(f'analysis took {toc - self.tic:0.4f} seconds')
+                print(f'analysis took {toc - self.tic:0.6f} seconds')
                 print('bad_shot_list:', self.bad_shot_list)
                 self.tic=toc
 
@@ -437,25 +449,22 @@ class TestEventHandler_1(PatternMatchingEventHandler):
         if path != self.last_created:
             self.last_created = path
             # tic = time.perf_counter()
-            # print(f'{event.src_path} has been created!')
-            time.sleep(0.005)
+            print(f'{event.src_path} has been created!')
+            time.sleep(0.25)
             try:
                 hf = h5py.File(f'{event.src_path} ', 'r')
             except:
-                time.sleep(0.005)
+                time.sleep(0.25)
                 hf = h5py.File(f'{event.src_path} ', 'r')
                 print('exception')
-            # print('read file')
+            print('read file')
             im_array = np.array(hf['frame-00'])
             hf.close()
             atom_count, empty_list = analyze_image(im_array, tweezer_freq_list, num_tweezers)
-            print("Total atoms detected: ", atom_count)
-            num_empty = len(empty_list)
-            print("Total empty tweezers detected: ", num_empty)
-            # print(atom_count, empty_list)
+            print(atom_count, empty_list)
             tic_2 = time.perf_counter()
             try:
-                print('Elapsed time (ms): ', np.round(1000*(tic_2 - tic_1),3))
+                print('tic_2-tic_1', tic_2 - tic_1)
                 time_diff = tic_2 - tic_1
             except:
                 time_diff = 0
@@ -478,10 +487,10 @@ class TestEventHandler_1(PatternMatchingEventHandler):
                         break
                 # now divide into left and right sides of the boundary
                 empty_list_reduced=np.array(empty_list_reduced)
-                # print('empty_list_reduced:', empty_list_reduced)
+                print('empty_list_reduced:', empty_list_reduced)
                 num_empty = len(empty_list)
                 boundary = empty_list[int(num_empty / 2)]
-                # print('boundary:', boundary)
+                print('boundary:', boundary)
                 mask_L = empty_list_reduced < boundary
                 mask_R = empty_list_reduced >= boundary
                 empty_list_L = empty_list_reduced[mask_L]
@@ -493,8 +502,8 @@ class TestEventHandler_1(PatternMatchingEventHandler):
                     if i < num_tweezers-1:
                         segment_queue_R.append(segment_list[2*(num_tweezers-1)-i-1])
                 segment_queue_R = np.flip(segment_queue_R)
-                # print(f'segment_queue_L = {segment_queue_L}')
-                # print(f'segment_queue_R = {segment_queue_R}')
+                print(f'segment_queue_L = {segment_queue_L}')
+                print(f'segment_queue_R = {segment_queue_R}')
 
                 if len(segment_queue_L) > 0:
                     print('left sorting')
@@ -618,15 +627,15 @@ class TestEventHandler_2(PatternMatchingEventHandler):
             self.last_created = path
             # tic = time.perf_counter()
             print(f'{event.src_path} has been created!')
-            time.sleep(0.005)
+            time.sleep(0.25)
 
             try:
                 hf = h5py.File(f'{event.src_path} ', 'r')
             except:
-                time.sleep(0.005)
+                time.sleep(0.25)
                 hf = h5py.File(f'{event.src_path} ', 'r')
                 print('exception')
-            # print('read file')
+            print('read file')
             im_array = np.array(hf['frame-00'])
             hf.close()
             atom_count, empty_list = analyze_image(im_array, tweezer_freq_list, num_tweezers)
@@ -650,24 +659,32 @@ class TestEventHandler_2(PatternMatchingEventHandler):
 
 if __name__ == '__main__':
     # REGULAR SPACING
-    spacing = 0.8
+    spacing = 0.64
     #FOUR LAMBDA
     # spacing = 0.64
-    startfreq = 88
-    ntraps = 40 # this is the num of tweezers we want
-    path_folder = 'waveforms_80_40Twz_5lambda_susc-meas'
+    startfreq = 79.04
+    ntraps = 70 # this is the num of tweezers we want
+    path_folder = 'four lambda spacing - 70 tweezers'
     # path_folder = 'four lambda spacing'
     # path_folder = 'waveforms_100_40Twz_5lambda_hysteresis'
 
     multi_trig = False #if False (True) there should be 3 (5) tweezer_RF_trigs in cicero sequence;
-    hold_drop = False# True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
-    hold_drop_sweep= True # requires 4 tweezer triggers (tweezer sweep trig)
-    if hold_drop_sweep: hold_drop = False
+    hold_drop = True # True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
     # AXA_list = [
     #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5', 'sweep_from_5,5lambda_Spock_node_Delta=0l.h5']
     # ]
-    AXA_list = [['static.h5', 'static.h5', 'static.h5']]
-    # AXA_list = [['50tweezers.h5','50tweezers.h5','50tweezers.h5']]
+    # AXA_list = [['70tweezers_101.44center.h5','70tweezers_101.44center.h5','70tweezers_101.44center.h5']]
+    # AXA_list = [['40tweezers_sweep_to_halfint_antinode_PG3.h5','40tweezers_101.44center_4.5L_PG3.h5','40tweezers_sweep_from_halfint_antinode_PG3.h5']]
+    # AXA_list = [['40tweezers_sweep_to_halfint_antinode.h5', '40tweezers_101.44center_4.5L.h5',
+    #              '40tweezers_sweep_from_halfint_antinode.h5']]
+    # AXA_list = [['40tweezers_sweep_to_halfint_node.h5', '40tweezers_101.44center_4.5L_node.h5',
+    #              '40tweezers_sweep_from_halfint_node.h5']]
+
+    # AXA_list = [['70tweezers_sweep_to_halfint_node.h5', '70tweezers_101.44center_4.5L_node.h5',
+    #              '70tweezers_sweep_from_halfint_node.h5']]
+    # AXA_list = [['40tweezers_sweep_to_halfint_antinode.h5','40tweezers_101.44center_4.5L.h5','40tweezers_sweep_from_halfint_antinode.h5']]
+    # AXA_list =[['40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5']]
+    AXA_list =[['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5']]
     # AXA_list = [
     #     ['sweep_5to5,5lambda.h5', 'static_5,5lambda_antinode.h5',
     #      'sweep_5,5to5lambda.h5']
@@ -757,8 +774,8 @@ if __name__ == '__main__':
     #             ]
 
     # AXA_list = [
-    #     ['static.h5', 'static.h5',
-    #      'static.h5']
+    #     ['70tweezers_101.44center.h5', '70tweezers_101.44center.h5',
+    #      '70tweezers_101.44center.h5']
     #             ]
 
     # AXA_list = [
@@ -795,27 +812,33 @@ if __name__ == '__main__':
     flattened_AXA_list = [item for row in AXA_list for item in row]
 
     # drop_list = ['drop_2_twz14,26.h5', 'drop_1_twz14.h5','drop_1_twz26.h5']
-    # # drop_list = ['drop_2_twz15,25_NPM_Power_Adjusted.h5']
-    # drop_list = ['drop_2_twz18,22.h5','drop_1_twz18.h5','drop_1_twz22.h5']
-    # drop_list = ['static.h5','drop_8.h5','drop_10.h5','drop_12.h5','drop_14.h5','drop_16.h5','drop_18.h5']
+    # drop_list = ['drop_2_twz15,25_NPM_Power_Adjusted.h5']
+    # drop_list = ['drop_2_twz18,22.h5']
+    # drop_list = ['70tweezers_101.44center.h5','drop_8.h5','drop_10.h5','drop_12.h5','drop_14.h5','drop_16.h5','drop_18.h5']
     # drop_list=['drop_16.h5','drop_16.h5','drop_14.h5','drop_12.h5','drop_12.h5']
-    # drop_list = ['drop_2_twz15,25_not_phase_match.h5']
-    # drop_list = ['drop2_20,25.h5']
+    # drop_list = ['70tweezers_101.44center.h5']
     # drop_list = ['drop_2_twz15,25.h5']
     # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
-    # drop_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5', 'drop_2_twz14,26.h5']
+    # drop_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5']
     # drop_list = ['drop_3_14,15,16.h5', 'drop_3_24,25,26.h5']
     # drop_list = ['drop_1_twz8.h5','drop_1_twz12.h5','drop_1_twz20.h5', 'drop_1_twz28.h5', 'drop_1_twz35.h5']
     # drop_list = ['drop_2_twz14,26.h5','drop_2_twz14,26.h5', 'drop_1_twz14.h5', 'drop_1_twz26.h5']
     # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
     # drop_list = ['drop_2_twz12,28.h5'] #, 'drop_2_twz12,28.h5', 'drop_1_twz12.h5', 'drop_1_twz28.h5']
     # drop_list = ['drop_1_twz10.h5', 'drop_1_twz30.h5']
-    drop_list = ['drop5_twz18,19,20,21,22.h5'] # for mcm
-    # drop_list = ['drop_1_twz15.h5']'
-    # drop_list = ['static.h5']
-    # drop_list = ['drop_22.h5','drop_1_twz20.h5']
-    sweep_droplist = ['sweep_to_twz10,15,20,25,30.h5', 'drop5_twz10,15,20,25,30.h5']
-    # sweep_droplist=['static.h5']
+    drop_list = ['drop1_35.h5']
+    # drop_list = ['drop_1_twz20.h5']
+    # drop_list = ['70tweezers_101.44center.h5']
+    # drop_list = ['40tweezers_101.44center_4L.h5']
+    # drop_list = ['drop1_35.h5','drop1_50.h5', 'drop2_35,50.h5', 'drop2_35,50.h5']
+    # drop_list = ['drop2_35,42.h5', 'drop2_35,50.h5', 'drop2_20,35.h5',
+    #              'drop2_28,35.h5', 'drop2_20,50.h5','drop2_38,46.h5',
+    #              'drop1_20',  'drop1_28',
+    #              'drop1_35',  'drop1_42', 'drop1_50',
+    #              'drop1_24',
+    #              'drop1_32',  'drop1_38', 'drop1_46' ]
+    # drop_list = ['drop2_20,50']
+    #
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
     # static_list =
 
@@ -825,9 +848,9 @@ if __name__ == '__main__':
     #     multi_trig_list =
 
     # cycle_list = ['drop_20.h5'] #, 'drop_middle_10_v2.h5']
-    # cycle_list = ['drop_16_v1.h5', 'drop_8_new.h5', 'static.h5']
+    # cycle_list = ['drop_16_v1.h5', 'drop_8_new.h5', '70tweezers_101.44center.h5']
     # cycle_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5']
-    # cycle_list = ['static.h5'] #, 'drop_16_v1.h5', 'static.h5', 'drop_12.h5', 'static.h5', 'drop_8_new.h5', 'static.h5', 'drop_6.h5', 'drop_4.h5']
+    # cycle_list = ['70tweezers_101.44center.h5'] #, 'drop_16_v1.h5', '70tweezers_101.44center.h5', 'drop_12.h5', '70tweezers_101.44center.h5', 'drop_8_new.h5', '70tweezers_101.44center.h5', 'drop_6.h5', 'drop_4.h5']
 
 
     # startfreq = spacing * 125
@@ -863,12 +886,9 @@ if __name__ == '__main__':
     #################### include sorting waveforms ########################
     sort_list_L = [f'sweep_{num}.h5' for num in range(1, ntraps)]
     sort_list_R = [f'sweep_{num}R.h5' for num in range(1, ntraps)]
-    # sort_list_L = ['static.h5' for num in range(1, ntraps)]
-    # sort_list_R = ['static.h5' for num in range(1, ntraps)]
+    # sort_list_L = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
+    # sort_list_R = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
     sort_list = np.concatenate((sort_list_L, sort_list_R))
-    # print('buffer index:', 1+len(sort_list)+len(drop_list)+len(flattened_AXA_list)+len(sweep_droplist))
-    # print('sort list size',len(sort_list))
-    print(len(drop_list),len(flattened_AXA_list))
     # print(filename_list)
     wf_list = []
 
@@ -880,7 +900,7 @@ if __name__ == '__main__':
             # print(f"filename={filename} ,  samplelength={wav_temp.SampleLength}")
 
     # include static waveform
-    wav_temp = utilities.from_file(Path(path_folder, 'static.h5'), 'A')
+    wav_temp = utilities.from_file(Path(path_folder, '70tweezers_101.44center.h5'), 'A')
     wf_list.append(wav_temp)
 
     # print("#########################")
@@ -891,8 +911,6 @@ if __name__ == '__main__':
         wf_list.append(utilities.from_file_simple(Path(path_folder, filename), 'A'))
     # include multi trig AXA waveforms
     for filename in flattened_AXA_list:
-        wf_list.append(utilities.from_file_simple(Path(path_folder, filename), 'A'))
-    for filename in sweep_droplist:
         wf_list.append(utilities.from_file_simple(Path(path_folder, filename), 'A'))
     # include shifted waveform
     # wf_list.append(utilities.from_file_simple(Path(path_folder, 'static_shifted_-23970.h5'), 'A'))
@@ -1034,7 +1052,8 @@ if __name__ == '__main__':
 
 
     ##################################################################################################################
-    setup_channels(amplitude=85, use_filter=False)
+    # setup_channels(amplitude=85, use_filter=False)
+    setup_channels(amplitude=120, use_filter=False)
     _setup_clock()
     start_step = 0
     # step tells us which segment to loop for how many times, and what the next step is
@@ -1062,7 +1081,7 @@ if __name__ == '__main__':
     for j in range(len(segment_list)):
         # print("here")
         # print(j)
-        # print(wf_list[j].SampleLength)
+        print(wf_list[j].SampleLength)
         spcm_dwSetParam_i32(hCard, SPC_SEQMODE_WRITESEGMENT, segment_list[j])  # set current config switch to segment j
         spcm_dwSetParam_i32(hCard, SPC_SEQMODE_SEGMENTSIZE, wf_list[j].SampleLength)
         _write_segment([wf_list[j]], pv_buf_list[j], pn_buf_list[j], offset=0)
@@ -1127,7 +1146,7 @@ if __name__ == '__main__':
     while dwError == ERR_CLOCKNOTLOCKED:
         verboseprint("Clock not Locked, giving it a moment to adjust...")
         count += 1
-        time.sleep(0.1)
+        time.sleep(0.25)
         _error_check(halt=False, print_err=False)
         dwError = spcm_dwSetParam_i32(hCard, SPC_M2CMD, M2CMD_CARD_START)  # | M2CMD_CARD_ENABLETRIGGER | WAIT)
         if count == 10:
@@ -1148,7 +1167,7 @@ if __name__ == '__main__':
     my_observer.start()
     try:
         while not missed_trigger_event:
-            time.sleep(1)
+            time.sleep(3)
             # print('################################')
             # print('true')
             # print('###############################')
@@ -1160,7 +1179,7 @@ if __name__ == '__main__':
 
     try:
         while True:
-            time.sleep(1)
+            time.sleep(3)
             # print('################################')
             # print('true')
             # print('###############################')

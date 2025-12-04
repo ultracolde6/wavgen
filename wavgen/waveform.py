@@ -833,7 +833,9 @@ class Sweep_sequence(Waveform):
                 A0 = (wB - wA) / T
                 for i in range(N):
                     n = i + p * DATA_MAX
-                    waveform[i] += np.sin(phi_A + wA * n \
+                    tempx=n/T
+                    waveform[i] += (1.25 - (tempx-0.5)** 2) \
+                                        *np.sin(phi_A + wA * n \
                                           + A0 * n ** 2 / 2 \
                                           + A0 * (T / (2 * np.pi)) ** 2 * np.cos(2 * np.pi * n / T) \
                                           - A0 * (T / (2 * np.pi)) ** 2 \
