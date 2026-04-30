@@ -848,30 +848,27 @@ if __name__ == '__main__':
     # ntraps = 40
     # path_folder = 'SixLambda-FortyTweezers'
 
-    path_folder = 'waveforms_80_40Twz_5lambda_susc-meas'
-    spacing = 0.8
-    startfreq = 88
-    ntraps = 40
-    spacing = 0.8
-    ntraps_drop = 40
+    # path_folder = 'waveforms_80_40Twz_5lambda_susc-meas'
+    # spacing = 0.8
+    # startfreq = 88
+    # ntraps = 40
+    # spacing = 0.8
+    # ntraps_drop = 40
 
-    # FOUR LAMBDA 40 tweezers
-    # spacing = 0.64
-    # # spacing = 0.64
-    # startfreq = 88.64
-    # ntraps = 40  # this is the num of tweezers we want
-    # path_folder = 'four lambda spacing - 70 tweezers'
-
+    # FOUR LAMBDA
+    spacing = 0.64
+    startfreq = 88.64
+    ntraps = 40 # this is the num of tweezers we want
+    path_folder = 'four lambda spacing - 70 tweezers'
 
     multi_trig = False #if False (True) there should be 2 (5) tweezer_RF_trigs in cicero sequence; UPDATE 1/30/25 we realized we only need 2 triggers if multi_trig=False
     hold_drop = False# True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
-    hold_drop_sweep = False # requires 4 tweezer triggers (tweezer sweep trig)
+    hold_drop_sweep= False # requires 4 tweezer triggers (tweezer sweep trig)
     if hold_drop_sweep: hold_drop = False
     # AXA_list = [
     #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5', 'sweep_from_5,5lambda_Spock_node_Delta=0l.h5']
     # ]
-    # AXA_list = [['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5']]
-    AXA_list = [['static.h5', 'static.h5', 'static.h5']]
+    AXA_list = [['40tweezers_101.44center_4L.h5', '40tweezers_101.44center_4L.h5', '40tweezers_101.44center_4L.h5']]
     # AXA_list = [['50tweezers.h5','50tweezers.h5','50tweezers.h5']]
     # AXA_list = [
     #     ['sweep_5to5,5lambda.h5', 'static_5,5lambda_antinode.h5',
@@ -1016,19 +1013,13 @@ if __name__ == '__main__':
     # drop_list = ['drop_2_twz12,28.h5'] #, 'drop_2_twz12,28.h5', 'drop_1_twz12.h5', 'drop_1_twz28.h5']
     # drop_list = ['drop_1_twz10.h5', 'drop_1_twz30.h5']
     # drop_list = ['drop5_twz18,19,20,21,22.h5'] # for mcm
-    # drop_list = ['drop_1_twz20.h5']
-    # drop_list = ['drop15.h5']
-    # drop_list = ['drop1_20.h5']
-    drop_list = ['static.h5']
-    # drop_list = ['40tweezers_101.44center_blockade_drop_4L.h5']
+    # drop_list = ['drop_1_twz16.h5']
+    # drop_list = ['static.h5']
     # drop_list = ['drop_22.h5','drop_1_twz20.h5']
-    # drop_list = ['drop_1_twz5.h5', 'drop_1_twz8.h5', 'drop_1_twz14.h5', 'drop_1_twz20.h5', 'drop_1_twz26.h5', 'drop_1_twz30.h5']
-    sweep_droplist = ['sweep_to_twz10,15,20,25,30.h5', 'drop5_twz10,15,20,25,30.h5']
-    # sweep_droplist = ['drop5_twz18,19,20,21,22.h5','drop5_twz18,19,20,21,22.h5']
-    # sweep_droplist=['static.h5']
-    # drop_list = ['40tweezers_101.44center_4L.h5']
-    # drop_list= ['drop1_35.h5']
-    # sweep_droplist = ['40tweezers_101.44center_4L.h5']
+    # drop_list = ['drop1_20.h5', 'drop1_28.h5', 'drop1_35.h5', 'drop1_42.h5', 'drop1_50.h5','drop1_42.h5', 'drop1_50.h5','drop1_42.h5', 'drop1_50.h5']
+    drop_list = ['drop1_35.h5', 'drop1_20.h5', 'drop1_50.h5', 'drop1_50.h5', 'drop1_50.h5', 'drop1_50.h5']
+    # sweep_droplist = ['sweep_to_twz10,15,20,25,30.h5', 'drop5_twz10,15,20,25,30.h5']
+    sweep_droplist=['40tweezers_101.44center_4L.h5']
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
     # static_list =
 
@@ -1074,12 +1065,10 @@ if __name__ == '__main__':
     #     log_file.write(log_entry_init)
 
     #################### include sorting waveforms ########################
-    sort_list_L = [f'sweep_{num}.h5' for num in range(1, ntraps)]
-    sort_list_R = [f'sweep_{num}R.h5' for num in range(1, ntraps)]
-    # sort_list_L = [f'sweep40tweezers_{num}.h5' for num in range(1, ntraps)]
-    # sort_list_R = [f'sweep40tweezers_{num}R.h5' for num in range(1, ntraps)]
-    # sort_list_L = ['static.h5' for num in range(1, ntraps)]
-    # sort_list_R = ['static.h5' for num in range(1, ntraps)]
+    sort_list_L = [f'sweep40tweezers_{num}.h5' for num in range(1, ntraps)]
+    sort_list_R = [f'sweep40tweezers_{num}R.h5' for num in range(1, ntraps)]
+    # sort_list_L = ['40tweezers_101.44center_4L.h5' for num in range(1, ntraps)]
+    # sort_list_R = ['40tweezers_101.44center_4L.h5' for num in range(1, ntraps)]
     sort_list = np.concatenate((sort_list_L, sort_list_R))
     # print('buffer index:', 1+len(sort_list)+len(drop_list)+len(flattened_AXA_list)+len(sweep_droplist))
     # print('sort list size',len(sort_list))
@@ -1090,16 +1079,15 @@ if __name__ == '__main__':
 
     for filename in sort_list:
         if os.access(Path(path_folder, filename), os.F_OK):  # ...retrieve the Waveforms from file.
-            # print("Path =", Path(path_folder, filename))
+            # print("Path =",Path(path_folder, filename))
             wav_temp=utilities.from_file(Path(path_folder, filename), 'AB')
             wf_list.append(wav_temp)
             # print("#########################")
             # print(f"filename={filename} ,  samplelength={wav_temp.SampleLength}")
 
     # include static waveform
-    wav_temp = utilities.from_file(Path(path_folder, 'static.h5'), 'A')
-    # wav_temp = utilities.from_file(Path(path_folder, 'static_20_center.h5'), 'A')
-    # wav_temp = utilities.from_file(Path(path_folder, '40tweezers_101.44center_4L.h5'), 'A')
+    # wav_temp = utilities.from_file(Path(path_folder, 'static.h5'), 'A')
+    wav_temp = utilities.from_file(Path(path_folder, '40tweezers_101.44center_4L.h5'), 'A')
     wf_list.append(wav_temp)
 
     # print("#########################")

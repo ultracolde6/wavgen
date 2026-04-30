@@ -246,7 +246,8 @@ class TestEventHandler(PatternMatchingEventHandler):
                     ##################### Start of AXA ############################
                     if multi_trig == True and hold_drop:
                         lStep = 2 * num_tweezers + 100
-                        llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
                         llLoop = 1
                         llNext = 2 * num_tweezers + 22
                         llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
@@ -280,7 +281,8 @@ class TestEventHandler(PatternMatchingEventHandler):
                         spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
                         lStep = 2 * num_tweezers + 25
-                        llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
                         llLoop = 1
                         llNext = 0
                         llCondition = SPCSEQ_ENDLOOPONTRIG
@@ -350,7 +352,8 @@ class TestEventHandler(PatternMatchingEventHandler):
                         lStep = 2 * num_tweezers + 100
 
                         if hold_drop:
-                            llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
                             llLoop = 1
                             llNext = 0
                             llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
@@ -659,218 +662,33 @@ if __name__ == '__main__':
     spacing = 0.64
     #FOUR LAMBDA
     # spacing = 0.64
-    startfreq = 79.04
-    ntraps = 70 # this is the num of tweezers we want
+    startfreq = 88.64
+    ntraps = 40 # this is the num of tweezers we want
     path_folder = 'four lambda spacing - 70 tweezers'
     # path_folder = 'four lambda spacing'
     # path_folder = 'waveforms_100_40Twz_5lambda_hysteresis'
 
-    multi_trig = False #if False (True) there should be 3 (5) tweezer_RF_trigs in cicero sequence;
-    hold_drop = False # True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
-    # AXA_list = [
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5', 'sweep_from_5,5lambda_Spock_node_Delta=0l.h5']
-    # ]
-    AXA_list = [['70tweezers_101.44center.h5','70tweezers_101.44center.h5','70tweezers_101.44center.h5']]
-    # AXA_list = [['40tweezers_sweep_to_halfint_antinode_PG3.h5','40tweezers_101.44center_4.5L_PG3.h5','40tweezers_sweep_from_halfint_antinode_PG3.h5']]
-    # AXA_list = [['40tweezers_sweep_to_halfint_antinode.h5', '40tweezers_101.44center_4.5L.h5',
-    #              '40tweezers_sweep_from_halfint_antinode.h5']]
-    # AXA_list = [['40tweezers_sweep_to_halfint_node.h5', '40tweezers_101.44center_4.5L_node.h5',
-    #              '40tweezers_sweep_from_halfint_node.h5']]
-    #
-    # AXA_list = [['70tweezers_sweep_to_halfint_node.h5', '70tweezers_101.44center_4.5L_node.h5',
-    #              '70tweezers_sweep_from_halfint_node.h5']]
-    # AXA_list = [['70tweezers_sweep_to_halfint_antinode.h5','70tweezers_101.44center_4.5L.h5','70tweezers_sweep_from_halfint_antinode.h5']]
-    # AXA_list = [['40tweezers_sweep_to_halfint_antinode.h5','40tweezers_101.44center_4.5L.h5','40tweezers_sweep_from_halfint_antinode.h5']]
-    # AXA_list =[['40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5']]
-    # AXA_list =[['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5']]
-    # AXA_list = [
-    #     ['sweep_5to5,5lambda.h5', 'static_5,5lambda_antinode.h5',
-    #      'sweep_5,5to5lambda.h5']
-    # ]
-
-    # 5.5 lambda node spock
-    # AXA_list = [
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.075l.h5', 'static_5,5lambda_Spock_node_Delta=-0.075l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.075l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.05l.h5', 'static_5,5lambda_Spock_node_Delta=-0.05l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.05l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.0375l.h5', 'static_5,5lambda_Spock_node_Delta=-0.0375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.0375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.025l.h5', 'static_5,5lambda_Spock_node_Delta=-0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.025l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=-0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.025l.h5', 'static_5,5lambda_Spock_node_Delta=0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.025l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.0375l.h5', 'static_5,5lambda_Spock_node_Delta=0.0375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.0375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.05l.h5', 'static_5,5lambda_Spock_node_Delta=0.05l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.05l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.075l.h5', 'static_5,5lambda_Spock_node_Delta=0.075l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.075l.h5']
-    #             ]
-
-    # AXA_list = [
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.025l.h5', 'static_5,5lambda_Spock_node_Delta=-0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.025l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=-0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.009375l.h5', 'static_5,5lambda_Spock_node_Delta=-0.009375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.009375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.00625l.h5', 'static_5,5lambda_Spock_node_Delta=-0.00625l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.00625l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.003125l.h5', 'static_5,5lambda_Spock_node_Delta=-0.003125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.003125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.003125l.h5', 'static_5,5lambda_Spock_node_Delta=0.003125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.003125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.00625l.h5', 'static_5,5lambda_Spock_node_Delta=0.00625l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.00625l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.009375l.h5', 'static_5,5lambda_Spock_node_Delta=0.009375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.009375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.025l.h5', 'static_5,5lambda_Spock_node_Delta=0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.025l.h5'],
-    # ]
-
-    # AXA_list = [
-    #     ['sweep_to_4,5lambda_Spock_node_Delta=0.00625l.h5', 'static_4,5lambda_Spock_node_Delta=0.00625l.h5',
-    #      'sweep_from_4,5lambda_Spock_node_Delta=0.00625l.h5'],
-    # ]
+    multi_trig = True #if False (True) there should be 3 (5) tweezer_RF_trigs in cicero sequence;
+    hold_drop = True # True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
 
 
-    # 5lambda node
-    # AXA_list = [
-    #     ['sweep_5lambda_shifted_Lo4.h5', 'static_5lambda_shifted_Lo4_short.h5',
-    #      'sweep_5lambda_back_shifted_Lo4.h5']
-    #             ]
 
-    # AXA_list = [
-    #     ['sweep_5to5,5lambda.h5', 'static_5,5lambda_antinode.h5',
-    #      'sweep_5,5to5lambda.h5']
-    #             ]
+    # AXA_list = [['22_sweep5_to_4.5_antinode.h5', 'drop22_4.5L.h5',
+    #              '22_sweep4.5_to_5_antinode.h5']]
 
-    # AXA_list = [
-    #     ['sweep_to_5lambda_twogroup_node_Delta=-0.25l.h5', 'static_5lambda_twogroup_node_Delta=-0.25l.h5',
-    #      'sweep_from_5lambda_twogroup_node_Delta=-0.25l.h5']
-    #             ]
+    # AXA_list = [['drop22_5L.h5', 'drop22_5L.h5',
+    #              'drop22_5L.h5']]
 
-    # AXA_list = [
-    #     ['sweep_to_5lambda_twogroup_node_Delta=-0.03125l.h5', 'static_5lambda_twogroup_node_Delta=-0.03125l.h5',
-    #      'sweep_from_5lambda_twogroup_node_Delta=-0.03125l.h5']
-    #             ]
 
-    # AXA_list = [
-    #     ['sweep_to_5lambda_twogroup_node_Delta=0l.h5', 'static_5lambda_twogroup_node_Delta=0l.h5',
-    #      'sweep_from_5lambda_twogroup_node_Delta=0l.h5']
-    #             ]
+    AXA_list = [['22_sweep4_to_4.5_antinode.h5', '22_4.5_antinode.h5',
+                 '22_sweep4.5_to_4_antinode.h5']]
 
-    # AXA_list = [
-    #     ['70tweezers_101.44center.h5', '70tweezers_101.44center.h5',
-    #      '70tweezers_101.44center.h5']
-    #             ]
 
-    # AXA_list = [
-    #             ['sweep_to_half_shifted_Lo2_node_dualbias_Lo0.h5', 'static_half-shifted_Lo2_dualbias_Lo0.h5','sweep_from_half_shifted_Lo2_node_dualbias_Lo0.h5']
-    #             ]
-    # AXA_list = [
-    #             ['sweep_to_half_shifted_Lo2_node_100.h5', 'static_shift_unbiased_v1.h5','sweep_from_half_shifted_Lo2_node_100.h5']
-    #             ]
-
-    # AXA_list = [
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo-4.h5', 'static_half-shifted_Lo2_dualbias_Lo-4.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo-4.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo-8.h5', 'static_half-shifted_Lo2_dualbias_Lo-8.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo-8.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo-16.h5', 'static_half-shifted_Lo2_dualbias_Lo-16.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo-16.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo-32.h5', 'static_half-shifted_Lo2_dualbias_Lo-32.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo-32.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo-64.h5', 'static_half-shifted_Lo2_dualbias_Lo-64.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo-64.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo0.h5', 'static_half-shifted_Lo2_dualbias_Lo0.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo0.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo64.h5', 'static_half-shifted_Lo2_dualbias_Lo64.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo64.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo32.h5', 'static_half-shifted_Lo2_dualbias_Lo32.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo32.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo16.h5', 'static_half-shifted_Lo2_dualbias_Lo16.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo16.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo8.h5', 'static_half-shifted_Lo2_dualbias_Lo8.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo8.h5'],
-    #     ['sweep_to_half_shifted_Lo2_node_dualbias_Lo4.h5', 'static_half-shifted_Lo2_dualbias_Lo4.h5',
-    #      'sweep_from_half_shifted_Lo2_node_dualbias_Lo4.h5']
-    # ]
     flattened_AXA_list = [item for row in AXA_list for item in row]
 
-    # drop_list = ['drop_2_twz14,26.h5', 'drop_1_twz14.h5','drop_1_twz26.h5']
-    # drop_list = ['drop_2_twz15,25_NPM_Power_Adjusted.h5']
-    # drop_list = ['drop_2_twz18,22.h5']
-    # drop_list = ['70tweezers_101.44center.h5']
-    # drop_list=['drop_16.h5','drop_16.h5','drop_14.h5','drop_12.h5','drop_12.h5']
-    # drop_list = ['70tweezers_101.44center.h5']
-    # drop_list = ['drop_2_twz15,25.h5']
-    # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
-    # drop_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5']
-    # drop_list = ['drop_3_14,15,16.h5', 'drop_3_24,25,26.h5']
-    # drop_list = ['drop_1_twz8.h5','drop_1_twz12.h5','drop_1_twz20.h5', 'drop_1_twz28.h5', 'drop_1_twz35.h5']
-    # drop_list = ['drop_2_twz14,26.h5','drop_2_twz14,26.h5', 'drop_1_twz14.h5', 'drop_1_twz26.h5']
-    # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
-    # drop_list = ['drop_2_twz12,28.h5'] #, 'drop_2_twz12,28.h5', 'drop_1_twz12.h5', 'drop_1_twz28.h5']
-    # drop_list = ['drop_1_twz10.h5', 'drop_1_twz30.h5']
-    # drop_list = ['drop_1_twz25.h5']
-    # drop_list = ['drop_1_twz20.h5']
-    drop_list = ['70tweezers_101.44center.h5']
-    # drop_list = ['40tweezers_101.44center_4L.h5']
-    # drop_list = ['drop1_35.h5','drop1_42.h5', 'drop2_35,42.h5', 'drop2_35,42.h5']
-    # drop_list = ['drop2_35,42.h5', 'drop2_35,50.h5', 'drop2_20,35.h5',
-    #              'drop2_28,35.h5', 'drop2_20,50.h5','drop2_38,46.h5',
-    #              'drop1_20',  'drop1_28',
-    #              'drop1_35',  'drop1_42', 'drop1_50',
-    #              'drop1_24',
-    #              'drop1_32',  'drop1_38', 'drop1_46' ]
-    # drop_list = ['drop1_20', 'drop1_28',
-    #              'drop1_35', 'drop1_42', 'drop1_50']
-    # drop_list = ['drop1_20', 'drop1_20', 'drop1_28',
-    #              'drop1_35', 'drop1_42', 'drop1_50']
-    # drop_list = ['drop1_20', 'drop1_20', 'drop1_50']
-    # drop_list = ['drop1_20', 'drop1_20','drop2_20,50.h5', 'drop1_50']
-    # drop_list = ['drop1_22', 'drop1_22', 'drop1_30',
-    #              'drop1_37', 'drop1_44', 'drop1_52']
-    # drop_list = ['drop1_22', 'drop1_22', 'drop1_37',]
-    # drop_list = [ 'drop1_35']
-    # drop_list = [ 'drop1_17', 'drop1_35','drop1_53']
-    # drop_list = [ 'drop1_17']
-        # , 'drop2_20,35', 'drop2_28,35', 'drop2_35,42' , 'drop2_35,50']
-    # drop_list = ['drop2_20,50.h5','drop2_20,28.h5','drop2_35,42.h5','drop2_38,46.h5','drop2_24,35.h5',
-    #              'drop1_20', 'drop1_28',  #'drop1_28','drop1_28',
-    #              'drop1_35', 'drop1_42', 'drop1_50',
-    #              'drop1_24',#'drop1_24','drop1_24',
-    #              'drop1_32', 'drop1_38', #'drop1_46', 'drop1_46',
-    #              'drop1_20','drop1_20', 'drop1_20','drop1_20',
-    #              'drop1_42','drop1_42', 'drop1_38','drop1_38',
-    #              'drop1_50','drop1_50','drop1_50','drop1_50',
-    #              'drop1_46']
+    drop_list = ['dropto22.h5']
+    # drop_list = ['drop2_20,25.h5']
 
-    # drop_list = ['drop2_24,35.h5', 'drop1_50.h5', 'drop2_20,50.h5', 'drop1_24.h5', 'drop1_46.h5',
-    #              'drop1_20.h5', 'drop1_50.h5', 'drop1_35.h5', 'drop1_28.h5', 'drop1_42.h5']
-    # drop_list = ['drop1_35.h5', 'drop1_32.h5', 'drop1_38.h5']
-    # drop_list = ['drop1_50.h5', 'drop2_20,50.h5', 'drop1_20.h5','drop1_35.h5']
-    # drop_list = ['drop1_50.h5', 'drop1_20.h5']
-        # ,
-        #          'drop1_16.h5', 'drop1_54.h5', 'drop2_16,54.h5','drop2_16,54.h5',
-        #          'drop1_35.h5', 'drop1_28.h5', 'drop1_42.h5']
-
-                 # 'drop1_38.h5', 'drop1_32.h5']
-
-    # drop_list = ['drop2_20,50']
-    #
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
     # static_list =
 
@@ -879,15 +697,6 @@ if __name__ == '__main__':
     #     path_folder = 'waveforms_160_40Twz_5lambda_susc-meas'
     #     multi_trig_list =
 
-    # cycle_list = ['drop_20.h5'] #, 'drop_middle_10_v2.h5']
-    # cycle_list = ['drop_16_v1.h5', 'drop_8_new.h5', '70tweezers_101.44center.h5']
-    # cycle_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5']
-    # cycle_list = ['70tweezers_101.44center.h5'] #, 'drop_16_v1.h5', '70tweezers_101.44center.h5', 'drop_12.h5', '70tweezers_101.44center.h5', 'drop_8_new.h5', '70tweezers_101.44center.h5', 'drop_6.h5', 'drop_4.h5']
-
-
-    # startfreq = spacing * 125
-    # startfreq = 87.89 #5lambda_v1
-    # startfreq = 88  # 5lambda_v2
 
 
     tweezer_freq_list = [startfreq + j * spacing for j in range(ntraps)]
@@ -916,10 +725,10 @@ if __name__ == '__main__':
     #     log_file.write(log_entry_init)
 
     #################### include sorting waveforms ########################
-    sort_list_L = [f'sweep_{num}.h5' for num in range(1, ntraps)]
-    sort_list_R = [f'sweep_{num}R.h5' for num in range(1, ntraps)]
-    # sort_list_L = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
-    # sort_list_R = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
+    # sort_list_L = [f'sweep_{num}.h5' for num in range(1, ntraps)]
+    # sort_list_R = [f'sweep_{num}R.h5' for num in range(1, ntraps)]
+    sort_list_L = [f'sweep40tweezers_{num}.h5' for num in range(1, ntraps)]
+    sort_list_R = [f'sweep40tweezers_{num}R.h5' for num in range(1, ntraps)]
     sort_list = np.concatenate((sort_list_L, sort_list_R))
     # print(filename_list)
     wf_list = []
@@ -932,7 +741,7 @@ if __name__ == '__main__':
             # print(f"filename={filename} ,  samplelength={wav_temp.SampleLength}")
 
     # include static waveform
-    wav_temp = utilities.from_file(Path(path_folder, '70tweezers_101.44center.h5'), 'A')
+    wav_temp = utilities.from_file(Path(path_folder, '40tweezers_101.44center_4L.h5'), 'A')
     wf_list.append(wav_temp)
 
     # print("#########################")

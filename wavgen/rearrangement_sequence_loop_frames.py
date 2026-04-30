@@ -72,7 +72,7 @@ class TestEventHandler(PatternMatchingEventHandler):
                 lStep = 1
                 llSegment = 2 * num_tweezers - 2
                 llLoop = 1
-                llNext = 0  # next step is the next sweep
+                llNext = 0
                 llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                 llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                 spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
@@ -245,49 +245,60 @@ class TestEventHandler(PatternMatchingEventHandler):
 
                     ##################### Start of AXA ############################
                     if multi_trig == True and hold_drop:
-                        lStep = 2 * num_tweezers + 100
-                        llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
-                        llLoop = 1
-                        llNext = 2 * num_tweezers + 22
-                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
-                        # print(f'{loop_num + 3}th trig')
-                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        for counter_temp_AXA_loop in range(multi_trig_loops):
+                            print(f"{counter_temp_AXA_loop}    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-                        lStep = 2 * num_tweezers + 22
-                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter))  # 2 * num_tweezers  # sweep to 5.5lambda shifted by Lo4
-                        llLoop = 1
-                        llNext = 2 * num_tweezers + 23
-                        llCondition = SPCSEQ_ENDLOOPALWAYS  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
-                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            if counter_temp_AXA_loop == 0:
+                                lStep = 2 * num_tweezers + 100
+                            else:
+                                lStep = 2 * num_tweezers + 21 + counter_temp_AXA_loop*4
+                            # llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1 # the drop waveform
+                            llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                            llLoop = 1
+                            llNext = 2 * num_tweezers + 22 + counter_temp_AXA_loop*4
+                            llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            # print(f'{loop_num + 3}th trig')
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
-                        lStep = 2 * num_tweezers + 23
-                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 1)  # 2 * num_tweezers + 1  # 5.5lambda shifted by Lo4
-                        llLoop = 1
-                        llNext = 2 * num_tweezers + 24  # 0 # 2 * num_tweezers + 100  # next step is 0
-                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
-                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                        toc1 = time.perf_counter()
-                        # print(toc1 - tic1)
-                        lStep = 2 * num_tweezers + 24
-                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 2)  # 2 * num_tweezers + 2  # sweep back by Lo4
-                        llLoop = 1
-                        llNext = 2 * num_tweezers + 25  # 0 # 2 * num_tweezers + 100  # next step is 0
-                        llCondition =  SPCSEQ_ENDLOOPALWAYS # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
-                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            lStep = 2 * num_tweezers + 22 + counter_temp_AXA_loop*4
+                            llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter))  # sweep A to X
+                            llLoop = 1
+                            llNext = 2 * num_tweezers + 23 + counter_temp_AXA_loop*4
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
-                        lStep = 2 * num_tweezers + 25
-                        llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            lStep = 2 * num_tweezers + 23 + counter_temp_AXA_loop*4
+                            llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 1)  # hold X
+                            llLoop = 1
+                            llNext = 2 * num_tweezers + 24 + counter_temp_AXA_loop*4
+                            llCondition = SPCSEQ_ENDLOOPONTRIG   # stay at X until triggered
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            toc1 = time.perf_counter()
+                            # print(toc1 - tic1)
+                            lStep = 2 * num_tweezers + 24 + counter_temp_AXA_loop*4
+                            llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 2)  # sweep X to A
+                            llLoop = 1
+                            llNext = 2 * num_tweezers + 25 + counter_temp_AXA_loop*4
+                            llCondition =  SPCSEQ_ENDLOOPALWAYS # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 25 + counter_temp_AXA_loop*4
+                        # llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1 # the drop waveform
+                        llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
                         llLoop = 1
-                        llNext = 0
+                        if multi_loop:
+                            llNext = 1 # the first sorting step <- this should be 0 if not for the next sort
+                        else:
+                            llNext = 0 # back to static waveform
                         llCondition = SPCSEQ_ENDLOOPONTRIG
                         llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                         spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
-                    elif multi_trig == True:
+                    elif multi_trig == True and not hold_drop:
                         lStep = 2 * num_tweezers + 100
                         llSegment = 2 * num_tweezers - 2  # the static waveform
                         llLoop = 1
@@ -350,7 +361,8 @@ class TestEventHandler(PatternMatchingEventHandler):
                         lStep = 2 * num_tweezers + 100
 
                         if hold_drop:
-                            llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
                             llLoop = 1
                             llNext = 0
                             llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
@@ -379,7 +391,7 @@ class TestEventHandler(PatternMatchingEventHandler):
                     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
                 # toc = time.perf_counter()
-                print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
+                # print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
                 self.current_time = time.time()
                 print("********************************")
 
@@ -414,8 +426,587 @@ class TestEventHandler(PatternMatchingEventHandler):
                 # else:
                 self.i_counter = (self.i_counter + 1) % self.Cycle_num
                 self.drop_counter = (self.drop_counter + 1) % self.drop_num
+                self.drop_counter = 0
+                self.AXA_counter = (self.AXA_counter + 1) % self.AXA_num #currently Cycle_num = AXA_num, and drop_num=1.
+
+                self.previous_time = self.current_time
+                self.shot_counter += 1
+                print('shot', self.shot_counter)
+                toc = time.perf_counter()
+                print(f'analysis took {toc - self.tic:0.6f} seconds')
+                print('bad_shot_list:', self.bad_shot_list)
+                self.tic=toc
+
+
+class TestEventHandler_3(PatternMatchingEventHandler): # for multi_loop
+
+    def __init__(self, Cycle_num, drop_num, AXA_num, loop_num, *args, **kwargs):
+        super(TestEventHandler_3, self).__init__(*args, **kwargs)
+        self.last_created = None
+        self.Cycle_num = Cycle_num
+        self.AXA_num = AXA_num
+        self.drop_num = drop_num
+        self.loop_num = loop_num
+        self.drop_counter=0
+        self.AXA_counter=0
+        self.loop_counter=0
+        self.i_counter=0
+        self.previous_time = time.time()
+        self.current_time = time.time()
+        self.shot_counter=0
+        self.tic = time.perf_counter()
+        self.bad_shot_list=[]
+
+
+    def on_created(self, event):
+        # global tic_1
+        tic_1 = time.perf_counter()
+
+        path = event.src_path
+        if path != self.last_created:
+            self.last_created = path
+            # tic = time.perf_counter()
+            print(f'{event.src_path} has been created!')
+            time.sleep(0.05)
+
+            try:
+                hf = h5py.File(f'{event.src_path} ', 'r')
+            except:
+                time.sleep(0.05)
+                hf = h5py.File(f'{event.src_path} ', 'r')
+                print('exception')
+            print('read file')
+            im_array = np.array(hf['frame-00'])
+            hf.close()
+            atom_count, empty_list = analyze_image(im_array, tweezer_freq_list_drop, num_tweezers_drop)
+            print(atom_count, empty_list)
+            tic_2 = time.perf_counter()
+            try:
+                print('tic_2-tic_1', tic_2-tic_1)
+                time_diff = tic_2-tic_1
+            except:
+                time_diff = 0
+            if time_diff>0.8:
+                print('skipping')
+                self.bad_shot_list.append(self.shot_counter+1)
+                lStep = 2 * num_tweezers + 25
+                llSegment = 2 * num_tweezers - 1 + 0  # the first drop waveform
+                llLoop = 1
+                llNext = 2 * num_tweezers + 25
+                llCondition = SPCSEQ_ENDLOOPALWAYS
+                llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+            else:
+            ##################################################################
+                if -1 < atom_count:
+                    print('there are atoms!')
+                    segment_queue_L = []
+                    segment_queue_R = []
+                    # now divide into left and right sides of the boundary
+                    mask_empty = np.diff(empty_list) > 1
+                    for i in range(len(mask_empty)):
+                        if mask_empty[i] and empty_list[0] == 0:
+                            empty_list_reduced = empty_list[i+1:]
+                            break
+                        else:
+                            empty_list_reduced = empty_list
+                    for i in range(len(mask_empty)):
+                        if mask_empty[-1-i] and empty_list[-1] == num_tweezers_drop-1:
+                            empty_list_reduced = empty_list_reduced[:-1-i]
+                            break
+                    # if len(empty_list)%2 and len(empty_list_reduced)>0:
+                    #     if empty_list_reduced[0] != 0:
+                    #         print('extra drop')
+                    #         empty_list_reduced.append(empty_list_reduced[0]-1)
+                    #     elif empty_list_reduced[-1] != num_tweezers-1:
+                    #         print('extra drop')
+                    #         empty_list_reduced.append(empty_list_reduced[-1]+1)
+                    # elif len(empty_list)%2 and len(empty_list_reduced)==0:
+                    #     for i in range(len(mask_empty)):
+                    #         if mask_empty[i] and empty_list[0] == 0:
+                    #             empty_list_reduced.append(empty_list[i]+1)
+                    #             print('extra drop')
+                    #             break
+                    #         elif mask_empty[-1 - i] and empty_list[-1] == num_tweezers - 1:
+                    #             empty_list_reduced.append(empty_list[-1 - i]-1)
+                    #             print('extra drop')
+                    #             break
+
+                    # now divide into left and right sides of the boundary
+                    empty_list_reduced=np.sort(empty_list_reduced)
+                    print('empty_list_reduced:', empty_list_reduced)
+                    num_empty = len(empty_list)
+                    boundary = empty_list[int(num_empty / 2)]
+                    print('boundary:', boundary)
+                    mask_L = empty_list_reduced <= boundary
+                    mask_R = empty_list_reduced > boundary
+                    empty_list_L = empty_list_reduced[mask_L]
+                    empty_list_R = empty_list_reduced[mask_R]
+                    for i in empty_list_L:
+                        if i > 0:
+                            segment_queue_L.append(segment_list_drop[i-1 + len(segment_list)])
+                    for i in empty_list_R:
+                        if i < num_tweezers_drop-1:
+                            segment_queue_R.append(segment_list_drop[2*(num_tweezers_drop-1)-i-1 + len(segment_list)])
+                    segment_queue_R = np.flip(segment_queue_R)
+                    print(f'segment_queue_L = {segment_queue_L}')
+                    print(f'segment_queue_R = {segment_queue_R}')
+
+                    # Step 0: Static configuration (waits for trigger)
+                    # Steps 1-20: Dynamic sorting sequence (left/right sweeps to fill empty sites)
+                    # Step 21: Drop waveform execution (removes unwanted atoms)
+                    # Step 121: Multi-loop decision point (checks if more loops needed)
+                    # Steps 22-24: AXA sequence
+                    # Step 25: Return to sorting for next cycle (if not final loop)
+                    #
+                    # Flow: Static(0) -> Sort(1-20) -> Drop(21) -> LoopCheck(121) -> AXA(22-24) -> Sort(1) -> ...
+                    #       After final loop: LoopCheck(121) -> Static(0) [sequence ends]
+                    
+                    # SORTING SEQUENCE: Steps 1 through ~20 (dynamically set based on empty sites)
+                    if len(segment_queue_L) > 0:
+                        print('left sorting')
+                        # STEPS 1 to (len(segment_queue_L)-1): Left-side sorting sweeps
+                        # These steps perform sequential sorting sweeps from left to right
+                        # Each sweep moves atoms to fill empty sites on the left side of the array
+                        for k in range(len(segment_queue_L) - 1): # last step is left out
+                            # print(segment_queue_L[k])
+                            lStep = k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                            llSegment = segment_queue_L[k]  # associated data memory segment (sorting waveform)
+                            llLoop = 1  # pattern repeated once
+                            llNext = k + 2  # next step is the next sweep in sequence
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step after completion
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                        # STEP (len(segment_queue_L)): Final left-side sorting sweep
+                        # Last sorting sweep on the left side
+                        # Transitions to right-side sorting if needed, or goes directly to drop step
+                        lStep = len(segment_queue_L)  # current step is the last one in left segment_queue
+                        llSegment = segment_queue_L[-1]  # associated data memory segment (final left sorting waveform)
+                        llLoop = 1  # pattern repeated once
+                        if len(segment_queue_R) > 0:
+                            llNext = len(segment_queue_L) + 1 # next go to re-sorting on the right (start right sorting)
+                        else: # right side is all fine
+                            print('no right sorting, going straight to dropping')
+                            llNext = 2*num_tweezers + 31  # skip right sorting, go directly to drop step
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step after completion
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        if len(segment_queue_R) > 0:
+                            print('right sorting 1')
+                            # STEPS (len(segment_queue_L)+1) to (len(segment_queue_L)+len(segment_queue_R)-1): Right-side sorting sweeps
+                            for k in range(len(segment_queue_R) - 1):
+                                lStep = len(segment_queue_L) + k + 1  # current step continues after left sorting steps
+                                llSegment = segment_queue_R[k]  # associated data memory segment (right sorting waveform)
+                                llLoop = 1  # pattern repeated once
+                                llNext = len(segment_queue_L) + k + 2  # next step is the next right sweep
+                                llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step after completion
+                                llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                                spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                            # STEP (len(segment_queue_L) + len(segment_queue_R)): Final right-side sorting sweep
+                            lStep = len(segment_queue_L) + len(segment_queue_R)  # current step is the last one in segment_queue
+                            llSegment = segment_queue_R[-1]  # associated data memory segment (final right sorting waveform)
+                            llLoop = 1  # pattern repeated once
+                            llNext = 2*num_tweezers + 31  # next: step 21 (drop waveform execution)
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step after completion
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        else:
+                            print('is this ever reached?')
+                            # lStep = 2 * num_tweezers + 100
+                            # llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1
+                            # # llSegment = 2 * num_tweezers - 1 + 0
+                            # llLoop = 1
+                            # llNext = 2 * num_tweezers + 22
+                            # llCondition = SPCSEQ_ENDLOOPONTRIG
+                            # # print(f'{loop_num + 3}th trig')
+                            # llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            # spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                    elif len(segment_queue_R) > 0 and len(segment_queue_L) == 0:
+                        # CASE: Right-side sorting only (no left-side empty sites)
+                        # STEPS 1 to len(segment_queue_R): Right-side sorting sweeps only
+                        print('right sorting 2 without left sorting')
+                        # STEPS 1 to (len(segment_queue_R)-1): Right-side sorting sweeps
+                        for k in range(len(segment_queue_R) - 1):
+                            # print(segment_queue_R[k])
+                            lStep = k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                            llSegment = segment_queue_R[k]  # associated data memory segment (right sorting waveform)
+                            llLoop = 1  # pattern repeated once
+                            llNext = k + 2  # next step is the next right sweep
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step after completion
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                        # STEP len(segment_queue_R): Final right-side sorting sweep
+                        # Last sorting sweep on the right side
+                        # After this, all sorting is complete, proceed to drop step
+                        lStep = len(segment_queue_R)  
+                        llSegment = segment_queue_R[-1]  
+                        llLoop = 1  
+                        llNext = 2 * num_tweezers + 31
+                        llCondition = SPCSEQ_ENDLOOPALWAYS 
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    else:
+                        # CASE: No sorting needed (no empty sites to fill, or all atoms already in place)
+                        # STEP 1: Skip directly to drop waveform
+                        # If no sorting is required, go straight to drop step
+                        print('no left or right sorting')
+                        lStep = 1  # current step is step 1
+                        llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1  # the drop waveform
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 31  # next: step 21 (drop waveform execution)
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step after completion
+                        # print(f'{loop_num + 3}th trig')
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    # STEP 21: Drop waveform execution
+                    # This step executes the drop waveform to remove unwanted atoms
+                    # After completion, it transitions to step 121 for multi-loop check
+                    lStep = 2 * num_tweezers + 31 # was 21
+                    print(f"####################{self.drop_counter}###################")
+                    llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1  # the drop waveform
+                    llLoop = int(10 * 0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated for 10 ms
+                    llNext = 2 * num_tweezers + 121  # next step: 121 (multi-loop decision point)
+                    llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step after loop completes
+                    llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                    spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                    ##################### Start of AXA  sequence ############################
+                    # Multi-loop mode: Allows multiple rearrangement cycles after initial drop
+                    # This enables iterative improvement of atom positioning
+                    if multi_trig == True and hold_drop and multi_loop:
+
+                        # print('test test test')
+                        # print(self.drop_counter)
+
+
+                        for counter_temp_AXA_loop in range(multi_trig_loops):
+                            print(f"{counter_temp_AXA_loop}   ????????????????????")
+
+                            # STEP 121: Multi-loop decision point
+                            # Holds the drop waveform and waits for trigger
+                            # Checks if this is the final loop iteration
+                            # - If final loop (loop_counter == loop_num-1): goes to step 0 (static, ends sequence)
+                            # - If not final: goes to step 22 (starts AXA sequence for next rearrangement)
+                            if counter_temp_AXA_loop == 0:
+                                lStep = 2 * num_tweezers + 121
+                            else:
+                                lStep = 2 * num_tweezers + 21 + counter_temp_AXA_loop*4
+
+                            llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1  # the drop waveform (held during wait)
+                            llLoop = 1
+                            if self.loop_counter == (self.loop_num - 1):  # stop the loop
+                                print('Final rearrangement')
+                                llNext = 0  # go back to static waveform after final trigger (end of multi-loop)
+                            else:
+                                print('Continuing to next rearrangement')
+                                llNext = 2 * num_tweezers + 22 + counter_temp_AXA_loop*4  # proceed to AXA sequence for next iteration
+                            llCondition = SPCSEQ_ENDLOOPONTRIG  # wait for external trigger before proceeding
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                            # STEP 22: AXA - Sweep to target spacing
+                            # First part of AXA sequence: sweep to target spacing (e.g., 3.5 lambda)
+                            lStep = 2 * num_tweezers + 22 + counter_temp_AXA_loop*4
+                            llSegment = int(len(wf_list) - 3 * (
+                                        self.AXA_num - self.AXA_counter))  # sweep to target spacing waveform
+                            llLoop = 1
+                            llNext = 2 * num_tweezers + 23 + counter_temp_AXA_loop*4  # next: step 23 (hold at target spacing)
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally proceed after waveform completes
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                            # STEP 23: AXA - Hold at target spacing
+                            # Second part of AXA sequence: hold at target spacing and wait for trigger
+                            lStep = 2 * num_tweezers + 23 + counter_temp_AXA_loop*4
+                            llSegment = int(len(wf_list) - 3 * (
+                                        self.AXA_num - self.AXA_counter) + 1)  # static at target spacing waveform
+                            llLoop = 1
+                            llNext = 2 * num_tweezers + 24 + counter_temp_AXA_loop*4
+                            llCondition = SPCSEQ_ENDLOOPONTRIG
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            toc1 = time.perf_counter()
+                            # print(toc1 - tic1)
+
+                            # STEP 24: AXA - Sweep back to original spacing
+                            # Third part of AXA sequence: sweep back from target spacing to original
+                            # Returns the tweezer array to its normal operating configuration
+                            lStep = 2 * num_tweezers + 24 + counter_temp_AXA_loop*4
+                            llSegment = int(
+                                len(wf_list) - 3 * (self.AXA_num - self.AXA_counter) + 2)  # sweep back waveform
+                            llLoop = 1
+                            llNext = 2 * num_tweezers + 25 + counter_temp_AXA_loop*4  # next: step 25 (return to sorting or end)
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally proceed after waveform completes
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+
+                            #
+                            # if counter_temp_AXA_loop == 0:
+                            #     lStep = 2 * num_tweezers + 121
+                            # else:
+                            #     lStep = 2 * num_tweezers + 21 + counter_temp_AXA_loop*4
+                            # # llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1 # the drop waveform
+                            # llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1  # the drop waveform (held during wait)
+                            # llLoop = 1
+                            # llNext = 2 * num_tweezers + 22 + counter_temp_AXA_loop*4
+                            # llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            # # print(f'{loop_num + 3}th trig')
+                            # llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            # spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            #
+                            # lStep = 2 * num_tweezers + 22 + counter_temp_AXA_loop*4
+                            # llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter))  # sweep A to X
+                            # llLoop = 1
+                            # llNext = 2 * num_tweezers + 23 + counter_temp_AXA_loop*4
+                            # llCondition = SPCSEQ_ENDLOOPALWAYS  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            # llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            # spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            #
+                            # lStep = 2 * num_tweezers + 23 + counter_temp_AXA_loop*4
+                            # llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 1)  # hold X
+                            # llLoop = 1
+                            # llNext = 2 * num_tweezers + 24 + counter_temp_AXA_loop*4
+                            # llCondition = SPCSEQ_ENDLOOPONTRIG   # stay at X until triggered
+                            # llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            # spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            # toc1 = time.perf_counter()
+                            # # print(toc1 - tic1)
+                            # lStep = 2 * num_tweezers + 24 + counter_temp_AXA_loop*4
+                            # llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 2)  # sweep X to A
+                            # llLoop = 1
+                            # llNext = 2 * num_tweezers + 25 + counter_temp_AXA_loop*4
+                            # llCondition =  SPCSEQ_ENDLOOPALWAYS # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            # llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            # spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                            #
+
+
+
+                        # STEP 25: Return to sorting for next rearrangement cycle
+                        # After AXA sequence completes, this step holds the drop waveform and waits for trigger
+                        # Then transitions to step 1 (first sorting step) to begin another rearrangement cycle
+                        # This creates the loop: sort -> drop -> AXA -> sort -> drop -> AXA -> ... (until final loop)
+                        lStep = 2 * num_tweezers + 25 + counter_temp_AXA_loop*4
+                        llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1  # the drop waveform (held during wait)
+                        llLoop = 1
+                        llNext = 1  # go to the first sorting step (step 1) to start next rearrangement cycle
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # wait for external trigger before starting next cycle
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        # if self.loop_counter==(self.loop_num): # stop the loop
+                        #     print('Final rearrangement')
+                        #     lStep = 2 * num_tweezers + 25
+                        #     llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1  # the drop waveform
+                        #     llLoop = 1
+                        #     llNext = 0 # go back to static on trigger
+                        #     llCondition = SPCSEQ_ENDLOOPONTRIG
+                        #     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        #     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        # else:
+                        #     print('Continuing to next rearrangement')
+                        #     lStep = 2 * num_tweezers + 25
+                        #     llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1 # the drop waveform
+                        #     llLoop = 1
+                        #     llNext = 1 # go to the first sorting step
+                        #     # llNext = 2 * num_tweezers + 22  # go to AXA
+                        #     llCondition = SPCSEQ_ENDLOOPONTRIG
+                        #     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        #     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    if multi_trig == True and hold_drop and not multi_loop:
+                        lStep = 2 * num_tweezers + 100
+                        # llSegment = 2 * num_tweezers - 1 + self.drop_counter + 1 # the drop waveform
+                        llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 22
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        # print(f'{loop_num + 3}th trig')
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 22
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter))  # 2 * num_tweezers  # sweep to 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 23
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 23
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 1)  # 2 * num_tweezers + 1  # 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 24  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        toc1 = time.perf_counter()
+                        # print(toc1 - tic1)
+                        lStep = 2 * num_tweezers + 24
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 2)  # 2 * num_tweezers + 2  # sweep back by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 25  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition =  SPCSEQ_ENDLOOPALWAYS # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 25
+                        # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                        llLoop = 1
+                        llNext = 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        print("does this get reached?")
+
+                    elif multi_trig == True and not hold_drop and not multi_loop:
+                        lStep = 2 * num_tweezers + 100
+                        llSegment = 2 * num_tweezers - 2  # the static waveform
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 22
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        # print(f'{loop_num + 3}th trig')
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 22
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter))  # 2 * num_tweezers  # sweep to 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 23
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 23
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 1)  # 2 * num_tweezers + 1  # 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 24  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        toc1 = time.perf_counter()
+                        # print(toc1 - tic1)
+                        lStep = 2 * num_tweezers + 24
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 2)  # 2 * num_tweezers + 2  # sweep back by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 25  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition =  SPCSEQ_ENDLOOPALWAYS # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        # lStep = 2 * num_tweezers + 25
+                        # llSegment = int(len(wf_list) - 2)  # 2 * num_tweezers + 3  # static 5.5lambda (not shifted)
+                        # llLoop = 1
+                        # llNext = 2 * num_tweezers + 26
+                        # llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
+                        # llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        # spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        #
+                        # lStep = 2 * num_tweezers + 26
+                        # llSegment = int(len(wf_list) - 1)  # 2 * num_tweezers + 4  # sweep to 5lambda spacing
+                        # llLoop = 1
+                        # llNext = 2 * num_tweezers + 27
+                        # llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        # llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        # spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 25
+                        llSegment = 2 * num_tweezers - 2  # static
+                        llLoop = 1
+                        llNext = 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    else:
+                        lStep = 2 * num_tweezers + 100
+
+                        if hold_drop:
+                            # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                            llLoop = 1
+                            llNext = 0
+                            llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
+                            # print(f'{loop_num + 3}th trig')
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        else:
+                            llSegment = 2 * num_tweezers - 2  # the static waveform
+                            llLoop = 1
+                            llNext = 0
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            # print(f'{loop_num + 3}th trig')
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                else:
+                    print('no atoms!')
+                    lStep = 1  # current step is step 1
+
+                    llSegment = 2*num_tweezers-1 + self.drop_counter + 1 #2*num_tweezers - 2   # drop
+                    # llLoop = int(25*4003200/wf_list[-1].SampleLength)  # pattern repeated once
+                    llLoop = int(5 * 0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated once
+                    llNext = 0  # go back to step 0
+                    llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                    llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                    spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                # toc = time.perf_counter()
+                print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
+                self.current_time = time.time()
+                print("********************************")
+
+                # date_dir_log = datetime.datetime.now().strftime("%Y\%m\%d")
+                # DIR_DATA_log = Path('X:/', 'expdata-e6', 'data', date_dir_log, "run_test")
+                # if not os.path.exists(DIR_DATA_log):
+                #     os.makedirs(DIR_DATA_log)
+                ################Write in logger file#######################
+                # log_file_path = Path(DIR_DATA_log, "wavegen_log.txt")
+                # current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # log_entry = f"{current_time}, Cycle {self.drop_counter:0.0f} of {self.drop_num:0.0f} in drop, " \
+                #             f"Cycle {self.AXA_counter:0.0f} of {self.AXA_num:0.0f} in AXA \n"
+                # with open(log_file_path, 'a') as log_file:
+                #     log_file.write(log_entry)
+                ##########################################################
+
+                print(f'Cycle {self.drop_counter:0.0f} of {self.drop_num:0.0f} in drop waveforms')
+                print(f'Cycle {self.AXA_counter:0.0f} of {self.AXA_num:0.0f} in AXA waveforms')
+                print(f'Rearrangement loop {self.loop_counter:0.0f} of {self.loop_num:0.0f}')
+                print("*******************************")
+                # if (self.current_time - self.previous_time > 13):
+                #     print('missed trigger!')
+                #     self.i_counter = (self.i_counter + 2) % self.Cycle_num
+                #     self.drop_counter = (self.drop_counter + 2) % self.drop_num
+                #     # self.drop_counter = 0
+                #     self.AXA_counter = (self.AXA_counter + 2) % self.AXA_num  # currently Cycle_num = AXA_num, and drop_num=1.
+                # elif (self.current_time - self.previous_time < 4):
+                #     print('missed trigger!')
+                #     self.i_counter = (self.i_counter + 0) % self.Cycle_num
+                #     self.drop_counter = (self.drop_counter + 0) % self.drop_num
+                #     # self.drop_counter = 0
+                #     self.AXA_counter = (self.AXA_counter + 0) % self.AXA_num  # currently Cycle_num = AXA_num, and drop_num=1.
+                # else:
+                self.i_counter = (self.i_counter + 1) % self.Cycle_num
+                self.drop_counter = (self.drop_counter + 1) % self.drop_num
                 # self.drop_counter = 0
                 self.AXA_counter = (self.AXA_counter + 1) % self.AXA_num #currently Cycle_num = AXA_num, and drop_num=1.
+                if multi_loop:
+                    self.loop_counter = (self.loop_counter + 1) % self.loop_num
 
                 self.previous_time = self.current_time
                 self.shot_counter += 1
@@ -661,25 +1252,48 @@ if __name__ == '__main__':
     # spacing = 0.64
     startfreq = 79.04
     ntraps = 70 # this is the num of tweezers we want
+    ntraps_drop = 46 # tweezer num after dropping
+    # startfreq = 86.72
+    # ntraps = 46
+    # ntraps_drop = 40 # tweezer num after dropping
     path_folder = 'four lambda spacing - 70 tweezers'
     # path_folder = 'four lambda spacing'
     # path_folder = 'waveforms_100_40Twz_5lambda_hysteresis'
 
     multi_trig = False #if False (True) there should be 3 (5) tweezer_RF_trigs in cicero sequence;
+    multi_trig_loops = 1 # add 2 * (multi_trig_loops-1) RF trigs!
     hold_drop = False # True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
+    num_loops = 0 # number of times to additionally loop the AXA sequence. num_loops=1 means we do AXA twice in the sequence.
+    if num_loops>0:
+        multi_loop=True
+    else:
+        multi_loop=False
     # AXA_list = [
     #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5', 'sweep_from_5,5lambda_Spock_node_Delta=0l.h5']
     # ]
     AXA_list = [['70tweezers_101.44center.h5','70tweezers_101.44center.h5','70tweezers_101.44center.h5']]
     # AXA_list = [['40tweezers_sweep_to_halfint_antinode_PG3.h5','40tweezers_101.44center_4.5L_PG3.h5','40tweezers_sweep_from_halfint_antinode_PG3.h5']]
+
+
+
     # AXA_list = [['40tweezers_sweep_to_halfint_antinode.h5', '40tweezers_101.44center_4.5L.h5',
-    #              '40tweezers_sweep_from_halfint_antinode.h5']]
+                 # '40tweezers_sweep_from_halfint_antinode.h5']]
+
+    # AXA_list = [['46tweezers_sweep_to_3.5L_antinode.h5', '46tweezers_101.44center_3.5L_antinode.h5',
+    #              '46tweezers_sweep_from_3.5L_antinode.h5']]
+
+    # AXA_list = [['46tweezers_sweep_to_4.5L_antinode.h5', '46tweezers_101.44center_4.5L_antinode.h5',
+    #              '46tweezers_sweep_from_4.5L_antinode.h5']]
+
+    # AXA_list = [['46tweezers_101.44center_4L.h5', '46tweezers_101.44center_4L.h5',
+    #              '46tweezers_101.44center_4L.h5']]
+
+
     # AXA_list = [['40tweezers_sweep_to_halfint_node.h5', '40tweezers_101.44center_4.5L_node.h5',
     #              '40tweezers_sweep_from_halfint_node.h5']]
-    #
+
     # AXA_list = [['70tweezers_sweep_to_halfint_node.h5', '70tweezers_101.44center_4.5L_node.h5',
     #              '70tweezers_sweep_from_halfint_node.h5']]
-    # AXA_list = [['70tweezers_sweep_to_halfint_antinode.h5','70tweezers_101.44center_4.5L.h5','70tweezers_sweep_from_halfint_antinode.h5']]
     # AXA_list = [['40tweezers_sweep_to_halfint_antinode.h5','40tweezers_101.44center_4.5L.h5','40tweezers_sweep_from_halfint_antinode.h5']]
     # AXA_list =[['40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5']]
     # AXA_list =[['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5']]
@@ -812,7 +1426,7 @@ if __name__ == '__main__':
     # drop_list = ['drop_2_twz14,26.h5', 'drop_1_twz14.h5','drop_1_twz26.h5']
     # drop_list = ['drop_2_twz15,25_NPM_Power_Adjusted.h5']
     # drop_list = ['drop_2_twz18,22.h5']
-    # drop_list = ['70tweezers_101.44center.h5']
+    # drop_list = ['70tweezers_101.44center.h5','drop_8.h5','drop_10.h5','drop_12.h5','drop_14.h5','drop_16.h5','drop_18.h5']
     # drop_list=['drop_16.h5','drop_16.h5','drop_14.h5','drop_12.h5','drop_12.h5']
     # drop_list = ['70tweezers_101.44center.h5']
     # drop_list = ['drop_2_twz15,25.h5']
@@ -824,55 +1438,18 @@ if __name__ == '__main__':
     # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
     # drop_list = ['drop_2_twz12,28.h5'] #, 'drop_2_twz12,28.h5', 'drop_1_twz12.h5', 'drop_1_twz28.h5']
     # drop_list = ['drop_1_twz10.h5', 'drop_1_twz30.h5']
-    # drop_list = ['drop_1_twz25.h5']
+    # drop_list = ['drop1_35.h5']
     # drop_list = ['drop_1_twz20.h5']
     drop_list = ['70tweezers_101.44center.h5']
-    # drop_list = ['40tweezers_101.44center_4L.h5']
-    # drop_list = ['drop1_35.h5','drop1_42.h5', 'drop2_35,42.h5', 'drop2_35,42.h5']
-    # drop_list = ['drop2_35,42.h5', 'drop2_35,50.h5', 'drop2_20,35.h5',
-    #              'drop2_28,35.h5', 'drop2_20,50.h5','drop2_38,46.h5',
-    #              'drop1_20',  'drop1_28',
-    #              'drop1_35',  'drop1_42', 'drop1_50',
-    #              'drop1_24',
-    #              'drop1_32',  'drop1_38', 'drop1_46' ]
-    # drop_list = ['drop1_20', 'drop1_28',
-    #              'drop1_35', 'drop1_42', 'drop1_50']
-    # drop_list = ['drop1_20', 'drop1_20', 'drop1_28',
-    #              'drop1_35', 'drop1_42', 'drop1_50']
-    # drop_list = ['drop1_20', 'drop1_20', 'drop1_50']
-    # drop_list = ['drop1_20', 'drop1_20','drop2_20,50.h5', 'drop1_50']
-    # drop_list = ['drop1_22', 'drop1_22', 'drop1_30',
-    #              'drop1_37', 'drop1_44', 'drop1_52']
-    # drop_list = ['drop1_22', 'drop1_22', 'drop1_37',]
-    # drop_list = [ 'drop1_35']
-    # drop_list = [ 'drop1_17', 'drop1_35','drop1_53']
-    # drop_list = [ 'drop1_17']
-        # , 'drop2_20,35', 'drop2_28,35', 'drop2_35,42' , 'drop2_35,50']
-    # drop_list = ['drop2_20,50.h5','drop2_20,28.h5','drop2_35,42.h5','drop2_38,46.h5','drop2_24,35.h5',
-    #              'drop1_20', 'drop1_28',  #'drop1_28','drop1_28',
-    #              'drop1_35', 'drop1_42', 'drop1_50',
-    #              'drop1_24',#'drop1_24','drop1_24',
-    #              'drop1_32', 'drop1_38', #'drop1_46', 'drop1_46',
-    #              'drop1_20','drop1_20', 'drop1_20','drop1_20',
-    #              'drop1_42','drop1_42', 'drop1_38','drop1_38',
-    #              'drop1_50','drop1_50','drop1_50','drop1_50',
-    #              'drop1_46']
+    # drop_list = ['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5'] # length of drop_list should be num_loops+1
+    # drop_list = ['drop1_10.h5', 'drop1_20.h5', 'drop1_30.h5', 'drop1_40.h5']  #<- this one is good for testing on camera
+    # drop_list = ['46tweezers_101.44center_4L.h5']
+    # drop_list = ['70tweezers_101.44center.h5']
+    if multi_loop:
+        drop_list = [drop_list[0] for n in range(num_loops+1)]  # length of drop_list should be num_loops+1
 
-    # drop_list = ['drop2_24,35.h5', 'drop1_50.h5', 'drop2_20,50.h5', 'drop1_24.h5', 'drop1_46.h5',
-    #              'drop1_20.h5', 'drop1_50.h5', 'drop1_35.h5', 'drop1_28.h5', 'drop1_42.h5']
-    # drop_list = ['drop1_35.h5', 'drop1_32.h5', 'drop1_38.h5']
-    # drop_list = ['drop1_50.h5', 'drop2_20,50.h5', 'drop1_20.h5','drop1_35.h5']
-    # drop_list = ['drop1_50.h5', 'drop1_20.h5']
-        # ,
-        #          'drop1_16.h5', 'drop1_54.h5', 'drop2_16,54.h5','drop2_16,54.h5',
-        #          'drop1_35.h5', 'drop1_28.h5', 'drop1_42.h5']
 
-                 # 'drop1_38.h5', 'drop1_32.h5']
-
-    # drop_list = ['drop2_20,50']
-    #
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
-    # static_list =
 
     # if multi_trig:
     #     # path_folder = 'waveforms_160_40Twz_5lambda_v2'
@@ -891,14 +1468,17 @@ if __name__ == '__main__':
 
 
     tweezer_freq_list = [startfreq + j * spacing for j in range(ntraps)]
+    tweezer_freq_list_drop = [startfreq + (ntraps-ntraps_drop)/2*spacing + j * spacing for j in range(ntraps_drop)]
     print(tweezer_freq_list)
 
     num_tweezers = len(tweezer_freq_list)
+    num_tweezers_drop = len(tweezer_freq_list_drop)
     date_dir = datetime.datetime.now().strftime("%Y\%m\%d")
     # DIR_DATA = Path('Y:/', 'expdata-e6', 'data', 'fluo_images_delete_1')
     DIR_DATA = Path('C:/', 'Users', 'CavityQED', 'Desktop', 'fluo_images_delete_1')
     DIR_DATA_2 = Path('C:/', 'Users', 'CavityQED', 'Desktop', 'fluo_images_delete_2')
     DIR_DATA_3 = Path('C:/', 'Users', 'CavityQED', 'Desktop', 'fluo_images_delete_3')
+    DIR_DATA_N = Path('C:/', 'Users', 'CavityQED', 'Desktop', 'fluo_images_delete_n')  # for multi-loop
 
 ######################initialize logger file####################################
     # run_name_log = "run0"
@@ -921,6 +1501,12 @@ if __name__ == '__main__':
     # sort_list_L = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
     # sort_list_R = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
     sort_list = np.concatenate((sort_list_L, sort_list_R))
+
+    sort_list_L_drop = [f'sweep46tweezers_{num}.h5' for num in range(1, ntraps_drop)]
+    sort_list_R_drop = [f'sweep46tweezers_{num}R.h5' for num in range(1, ntraps_drop)]
+    # sort_list_L = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
+    # sort_list_R = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
+    sort_list_drop = np.concatenate((sort_list_L_drop, sort_list_R_drop))
     # print(filename_list)
     wf_list = []
 
@@ -933,6 +1519,7 @@ if __name__ == '__main__':
 
     # include static waveform
     wav_temp = utilities.from_file(Path(path_folder, '70tweezers_101.44center.h5'), 'A')
+    # wav_temp = utilities.from_file(Path(path_folder, '46tweezers_101.44center_4L.h5'), 'A')
     wf_list.append(wav_temp)
 
     # print("#########################")
@@ -950,6 +1537,16 @@ if __name__ == '__main__':
     print(f"N_cycle={N_cycle}")
     print(f"wf_list_len={len(wf_list)}")
     segment_list = range(len(wf_list))
+
+    wf_list_drop = wf_list.copy()
+    for filename in sort_list_drop:
+        if os.access(Path(path_folder, filename), os.F_OK):  # NEED TO CHANGE THIS TO THE CORRECT PATH FOR SORTING WAVEFORMS AFTER DROPPING
+            wav_temp=utilities.from_file(Path(path_folder, filename), 'AB')
+            wf_list_drop.append(wav_temp)
+    segment_list_drop = range(len(wf_list_drop))
+    print(f"wf_list_drop_len={len(wf_list_drop)}")
+    print(f"wf_list_len={len(wf_list)}")
+
 
   ################################################
 
@@ -1089,7 +1686,7 @@ if __name__ == '__main__':
     _setup_clock()
     start_step = 0
     # step tells us which segment to loop for how many times, and what the next step is
-    max_segments = len(wf_list) # num_tweezers + N_cycle
+    max_segments = len(wf_list_drop)
     # readout used bytes per sample
     lBytesPerSample = int32(0)
     spcm_dwGetParam_i32(hCard, SPC_MIINST_BYTESPERSAMPLE, byref(lBytesPerSample))
@@ -1106,26 +1703,29 @@ if __name__ == '__main__':
     # create buffers and write segments to memory
     pv_buf_list = []
     pn_buf_list = []
-    for j in range(len(segment_list)):
-        pv_buf = pvAllocMemPageAligned(wf_list[j].SampleLength * 2)
+    for j in range(len(segment_list_drop)):
+        pv_buf = pvAllocMemPageAligned(wf_list_drop[j].SampleLength * 2)
         pv_buf_list.append(pv_buf)
         pn_buf_list.append(cast(pv_buf, ptr16))
-    for j in range(len(segment_list)):
+    for j in range(len(segment_list_drop)):
         # print("here")
         # print(j)
-        print(wf_list[j].SampleLength)
-        spcm_dwSetParam_i32(hCard, SPC_SEQMODE_WRITESEGMENT, segment_list[j])  # set current config switch to segment j
-        spcm_dwSetParam_i32(hCard, SPC_SEQMODE_SEGMENTSIZE, wf_list[j].SampleLength)
-        _write_segment([wf_list[j]], pv_buf_list[j], pn_buf_list[j], offset=0)
+        # print(wf_list_drop[j].SampleLength)
+        spcm_dwSetParam_i32(hCard, SPC_SEQMODE_WRITESEGMENT, segment_list_drop[j])  # set current config switch to segment j
+        spcm_dwSetParam_i32(hCard, SPC_SEQMODE_SEGMENTSIZE, wf_list_drop[j].SampleLength)
+        _write_segment([wf_list_drop[j]], pv_buf_list[j], pn_buf_list[j], offset=0)
 
 
 ########################################################################################################################
-    # set up the static configuration
+    # STEP 0: Static configuration (initial state)
+    # This is the starting point of the sequence
+    # Holds the static tweezer array configuration and waits for external trigger
+    # After trigger, transitions to step 1 (sorting sequence)
     lStep = 0  # current step is step 0
     llSegment = 2*num_tweezers-2  # associated data memory segment is static waveform
     llLoop = 1  # pattern repeated once
-    llNext = 1 # next step is step 1
-    llCondition = SPCSEQ_ENDLOOPONTRIG  # repeat current step until trig has occurred
+    llNext = 1 # next step is step 1 (sorting sequence begins)
+    llCondition = SPCSEQ_ENDLOOPONTRIG  # repeat current step until external trigger has occurred
     print('first trigger')
     # combine all parameters into one int64 bit value
     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
@@ -1134,7 +1734,7 @@ if __name__ == '__main__':
     lStep = 1
     llSegment = 2*num_tweezers-2
     llLoop = 1
-    llNext = 0  # next step is the next sweep
+    llNext = 0  # this is a dummy step
     llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
@@ -1152,6 +1752,7 @@ if __name__ == '__main__':
     my_event_handler = TestEventHandler(N_cycle,len(drop_list), len(AXA_list), patterns, ignore_patterns, ignore_directories, case_sensitive)
     my_event_handler_1 = TestEventHandler_1(N_cycle, patterns, ignore_patterns, ignore_directories, case_sensitive)
     my_event_handler_2 = TestEventHandler_2(missed_trigger_event, patterns, ignore_patterns, ignore_directories, case_sensitive)
+    my_event_handler_3 = TestEventHandler_3(N_cycle, len(drop_list)-1, len(AXA_list), num_loops, patterns, ignore_patterns,ignore_directories, case_sensitive)
 
     print('here')
 
@@ -1159,9 +1760,11 @@ if __name__ == '__main__':
     path = DIR_DATA
     path_2 = DIR_DATA_2
     path_3 = DIR_DATA_3
+    path_n = DIR_DATA_N
     go_recursively = True
     my_observer = Observer()
     my_observer.schedule(my_event_handler, path_2, recursive=go_recursively) #path_2 for 2nd sort
+    my_observer.schedule(my_event_handler_3, path_n, recursive=go_recursively)  # path_n for the looping sort
     my_observer.schedule(my_event_handler_1, path, recursive=go_recursively) # for the first sort
     my_observer.schedule(my_event_handler_2, path_3, recursive=go_recursively) # for checking frame2 for missed trigger
 

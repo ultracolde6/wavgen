@@ -324,7 +324,7 @@ class TestEventHandler(PatternMatchingEventHandler):
                     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
                 # toc = time.perf_counter()
-                print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
+                # print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
                 self.current_time = time.time()
                 print("********************************")
 

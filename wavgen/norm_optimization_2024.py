@@ -10,12 +10,12 @@ import ipyparallel as ipp
 if __name__ == '__main__':
     max_list = []
 
-    ntraps = 41  # this is the num of tweezers we want, plus 1
+    ntraps = 31  # this is the num of tweezers we want, plus 1
+    center_freq = 101.44E6
+    spacing = 0.16E6 * 6
 
-    spacing = 0.800E6
-
-    for sweep_mode in ["shiftedlinear"]:
-        for sweep_time in [0.08]:
+    for sweep_mode in ["cosine"]:
+        for sweep_time in [0.16]:
 
             for sweep_num in np.arange(ntraps-2)+1:
 
@@ -27,8 +27,8 @@ if __name__ == '__main__':
                 phasesA = []
 
                 ############## for R to L:#########################
-                #
-                startfreq = 88.04E6 # need to -spacing for L waveforms, don't for R waveforms
+                startfreq = center_freq - (ntraps - 1) / 2 * spacing
+                # startfreq = 88.04E6 # need to -spacing for L waveforms, don't for R waveforms
                 f_list = [startfreq + j * spacing for j in range(ntraps)]
 
                 for i in range(ntraps):
@@ -74,8 +74,8 @@ if __name__ == '__main__':
                 phasesA = []
 
                 ####################for L to R:########################
-
-                startfreq = 88.04E6 - spacing  # need to -spacing for L waveforms, don't for R waveforms
+                startfreq = center_freq - (ntraps + 1) / 2 * spacing
+                # startfreq = 88.04E6 - spacing  # need to -spacing for L waveforms, don't for R waveforms
                 f_list = [startfreq + j * spacing for j in range(ntraps)]
                 for i in range(ntraps):
                     if i <= sweep_num:

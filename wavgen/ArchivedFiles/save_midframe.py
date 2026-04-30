@@ -16,33 +16,20 @@ from pathlib import Path
 
 if __name__ == '__main__':
     Lambda = 0.16E6
-    for drop_num in [5]:
+    CenterFreq = 102.72E6
+    for fraction in [0]:
+    # for fraction in [1/64]:
         # bias=Lambda/fraction
+
         # bias=0
-        # folder_name = 'EightLambda'
-        folder_name = 'SixLambda-ThirtyTweezers'
-        # folder_name = 'four lambda spacing - 70 tweezers'
-        # folder_name = '3andhalf lambda spacing'
-        # folder_name = 'SixLambda-FortyTweezers_411'
         # folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
-        # filename = Path(folder_name, 'drop_5_twz21,22,23,24,25_NPM.h5')
+        folder_name = 'four lambda spacing - 70 tweezers'
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
-        # filename = Path(folder_name,'60tweezers.h5')
-        # filename = Path(folder_name,'drop5_twz18,19,20,21,22.h5')
-        # filename = Path(folder_name,'40tweezers_102.72center_two_groups.h5')
-        # filename = Path(folder_name,f'{drop_num}tweezers_102.72center_4L_antinode.h5')
-        # filename = Path(folder_name,'70tweezers_101.44center_5L_gapped.h5')
-        # filename = Path(folder_name,'26tweezers_101.44center_4L.h5')
-        # filename = Path(folder_name,'40dropto24.h5')
-        # filename = Path(folder_name,'70tweezers_nonlinear.h5')
-        # filename = Path(folder_name, f'drop1_{drop_idx}.h5')
-        # filename = Path(folder_name, f'40tweezers_101.44center_4L_antinode_rydberg.h5')
-        # filename = Path(folder_name, f'40tweezers_101.44center_blockade_4L_wide_v2.h5')
-        # filename = Path(folder_name, 'static_5,5lambda_shifted_Lo4_short.h5')
-        # filename = Path(folder_name, 'static.h5')
-        # filename = Path(folder_name, 'static_eightlambda.h5')
-        filename = Path(folder_name, 'drop_16.h5')
+        # filename = Path(folder_name, 'drop_9.h5')
+        # filename = Path(folder_name, 'static_5,5lambda_antinode.h5')
+        # filename = Path(folder_name, f'static_5lambda_twogroup_node_Delta={fraction}l.h5')
+        filename = Path(folder_name,'40tweezers_102.72center_two_groups.h5')
 
         # create a new folder for waveforms to be saved to, if it doesn't already exist
         new_path = Path(folder_name)
@@ -58,26 +45,33 @@ if __name__ == '__main__':
             print('Read file!')
             A = utilities.from_file(filename, 'A')
         else:
-            # ntraps = drop_num  # this is the num of tweezers we want
-            ntraps = 30  # this is the num of tweezers we want
+            ntraps = 40  # this is the num of tweezers we want
+            # ntraps = 1
             # startfreq = 88E6
-            # CenterFreq = 104.0E6
-            CenterFreq = 101.44E6
-            # CenterFreq = 102.72E6
-            # CenterFreq = 102.72E6
+            CenterFreq = 102.72E6
 
-            spacing_Lambda = 6
-            shift_Lambda = 0# 0.25 #+ 1 / 16
+            spacing_Lambda = 4
+            # shift_Lambda =  0*(2 + 1/2) #+ 1 / 16
+            # shift = shift_Lambda * Lambda  # 0.8E6
+
             # stagger_Lambda = -1 / 128
             spacing = spacing_Lambda * Lambda  # 0.8E6
-            shift = shift_Lambda * Lambda  # 0.8E6
             # stagger = stagger_Lambda * Lambda  # 0.8E6
-            # startfreq = CenterFreq - 20 * spacing
-            # startfreq = CenterFreq - (ntraps//2) * spacing
-            # startfreq=88E6
+            startfreq = CenterFreq - 20 * spacing
+            # startfreq = CenterFreq
             com_shift = 0*Lambda/4
             center_bias = 0*Lambda/16
 
+            # two group generation
+            sym_shift=fraction*Lambda
+            left_shift=-1.25*Lambda-sym_shift
+            right_shift=1.25*Lambda+sym_shift
+
+            freq_init = np.array([startfreq + com_shift + j * spacing for j in range(ntraps)])
+            freq_A = freq_init*1.0
+
+            freq_A[:int(ntraps/2)]=freq_init[:int(ntraps/2)] +left_shift
+            freq_A[int(ntraps/2):]=freq_init[int(ntraps/2):] +right_shift
             # ind = 14
             # spacing = (0.8-0.03/32)*1E6
             # spacing = 0.882E6
@@ -88,19 +82,10 @@ if __name__ == '__main__':
             # startfreq = 110*spacing -39950 # lambda/4 shifted
             # startfreq = 87.89E6
             # startfreq = 80.248E6
-            startfreq = CenterFreq - ntraps*spacing/2 # 86.4E6 + 0.04E6 #88.04E6
+            # startfreq = CenterFreq - 20*spacing + shift # 86.4E6 + 0.04E6 #88.04E6
 
             # freq_A = [startfreq + j*spacing + stagger*(-1)**(j+1) for j in range(ntraps)]
             # freq_A = [startfreq + com_shift + j * spacing for j in range(ntraps)]
-            # freq_A = np.array([startfreq +shift +  j * spacing for j in range(ntraps)])
-            freq_A = np.array([startfreq +shift +  j * spacing for j in range(ntraps)])
-            # freq_A[0] = freq_A[0] - (3.3)*Lambda
-            # freq_A[1] = freq_A[1] - 0 * Lambda
-            # freq_A[3] = freq_A[3] - 0 * Lambda
-            # freq_A[4] = freq_A[4] - (3.3)* Lambda
-            # nonlinear_factor = -1.28E3
-            # freq_A += nonlinear_factor * np.array([(j-30)*(j-29)/2 for j in range(ntraps)])
-
             # freq_A = []
             # for i in range(int(ntraps/2)):
             #     freq_A.append(startfreq + i*spacing - center_bias/2)
@@ -146,51 +131,24 @@ if __name__ == '__main__':
             #         freq_A.append(f_list[i] + shift_1)
             # print('Drop waveform frequencies:')
             # print(freq_A)
-            magsA = np.zeros(ntraps)
-            magsA[16] = 1
-            # magsA[::3] = 0
-            # for i in range(30,40):
-            #     magsA[i] = 0
-            # magsA = np.zeros(ntraps)
-            # magsA[0] = 1.005/1.07
-            # magsA[1] = 1.06/1.07
-            # magsA[2] = 0.96/1.07
-            # magsA[3] = 0.93/1.07
-            # magsA[4] = 1.03/1.07
-            # for i in [42,50]:
+            # magsA = np.zeros(ntraps)  # np.ones(ntraps)
+            magsA = np.ones(ntraps)
+            # for i in range(20, 30):
             #     magsA[i] = 1
-            # for i in range(19,20):
+            # for i in range(16,24):
             #     magsA[i]=1
-            # magsA[14] = 1
-            # magsA[14] = 1
+            # magsA[30] = 1
+            # magsA[10] = 1
             # for ii in range(10, 30):
             #     if ii%2 ==0:
             #         magsA[ii] = 1
             # for ii in range(16, 24):
             #     magsA[ii] = 1
-
-            phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
-            phasesA = np.cumsum(phase_diff)
-            # phase_diff_temp_5 = np.arange(5) / (5 - 1) * 2 * np.pi
-            # phases_temp_5 = np.cumsum(phase_diff_temp_5)
-            # phasesA= phases_temp_5
-
-            ################## the following minimizes cost function 3 ##########################
-            # phasesA = np.array([ -1.14254421e-01, -1.91730193e-01, 8.48065418e-02, 2.04235594e-01,
-            #                      7.27589378e-01, 1.64693962e+00, 2.23424824e+00, 3.89016556e+00,
-            #                      4.36346004e+00, 5.91085170e+00, 7.40510848e+00, 8.89809238e+00,
-            #                      1.05167619e+01, 1.25341858e+01, 1.47477671e+01, 1.72211853e+01,
-            #                      1.95716544e+01, 2.18883146e+01, 2.45402847e+01, 2.75826692e+01,
-            #                      3.06437088e+01, 3.37234011e+01, 3.71935083e+01, 4.09989265e+01,
-            #                      4.47705366e+01, 4.84191976e+01, 5.23276925e+01, 5.64323475e+01,
-            #                      6.09357548e+01, 6.55648507e+01, 7.01926692e+01, 7.47673572e+01,
-            #                      8.04161415e+01, 8.48823005e+01, 9.04170711e+01, 9.56197995e+01,
-            #                      1.01218521e+02, 1.07221170e+02, 1.13066712e+02, 1.19266267e+02 ])
-            #######################################################################################
-
-            # phase_diff_1 = np.arange(int(ntraps/2))/(int(ntraps/2)-1)*2*np.pi
-            # phases1 = np.cumsum(phase_diff_1)
-            # phasesA = np.concatenate([phases1, phases1+2*np.pi/(ntraps-2)])
+            # phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
+            # phasesA = np.cumsum(phase_diff)
+            phase_diff_1 = np.arange(int(ntraps/2))/(int(ntraps/2)-1)*2*np.pi
+            phases1 = np.cumsum(phase_diff_1)
+            phasesA = np.concatenate([phases1, phases1+2*np.pi/(ntraps-2)])
             # phasesA = utilities.rp[:len(freq_A)]
             A = wavgen.waveform.Superposition(freq_A, phases=phasesA, mags=magsA)  # One via the default constructor...
 

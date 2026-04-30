@@ -18,289 +18,11 @@ import os.path
 import datetime
 
 
-class SortingHelper:
-    """
-    Helper class for processing sorting operations in the double sort system.
-    Encapsulates common sorting logic used by both event handlers.
-    """
-    
-    def __init__(self, num_tweezers, segment_list, hCard):
-        """
-        Initialize the sorting helper.
-        
-        Parameters
-        ----------
-        num_tweezers : int
-            Total number of tweezers
-        segment_list : list
-            List of segment indices mapping to waveforms
-        hCard : ctypes handle
-            Handle to the SPCM card
-        """
-        self.num_tweezers = num_tweezers
-        self.segment_list = segment_list
-        self.hCard = hCard
-    
-    def process_empty_list(self, empty_list, include_boundary_in_left=False):
-        """
-        Process the empty tweezer list: remove edges, find boundary, split left/right.
-        
-        Parameters
-        ----------
-        empty_list : np.array
-            Array of empty tweezer indices
-        include_boundary_in_left : bool
-            If True, use <= for left mask (second sort). If False, use < (first sort).
-            
-        Returns
-        -------
-        tuple : (empty_list_L, empty_list_R, boundary)
-            Left and right empty lists, and the boundary tweezer index
-        """
-        # Remove empty tweezers at edges
-        mask_empty = np.diff(empty_list) > 1
-        empty_list_reduced = empty_list.copy()
-        
-        # Remove leading edge (position 0)
-        for i in range(len(mask_empty)):
-            if mask_empty[i] and empty_list[0] == 0:
-                empty_list_reduced = empty_list[i+1:]
-                break
-        
-        # Remove trailing edge (position num_tweezers-1)
-        for i in range(len(mask_empty)):
-            if mask_empty[-1-i] and empty_list[-1] == self.num_tweezers-1:
-                empty_list_reduced = empty_list_reduced[:-1-i]
-                break
-        
-        # Sort and find boundary
-        empty_list_reduced = np.sort(empty_list_reduced)
-        num_empty = len(empty_list)
-        boundary = empty_list[int(num_empty / 2)]
-        
-        # Split into left and right
-        if include_boundary_in_left:
-            mask_L = empty_list_reduced <= boundary
-        else:
-            mask_L = empty_list_reduced < boundary
-        mask_R = empty_list_reduced > boundary
-        
-        empty_list_L = empty_list_reduced[mask_L]
-        empty_list_R = empty_list_reduced[mask_R]
-        
-        return empty_list_L, empty_list_R, boundary
-    
-    def build_segment_queues(self, empty_list_L, empty_list_R):
-        """
-        Build segment queues for left and right sorting operations.
-        
-        Parameters
-        ----------
-        empty_list_L : np.array
-            Left side empty tweezer indices
-        empty_list_R : np.array
-            Right side empty tweezer indices
-            
-        Returns
-        -------
-        tuple : (segment_queue_L, segment_queue_R)
-            Lists of segment indices for left and right sorting
-        """
-        segment_queue_L = []
-        segment_queue_R = []
-        
-        # Left side: use left-to-right sweep waveforms
-        for i in empty_list_L:
-            if i > 0:
-                segment_queue_L.append(self.segment_list[i - 1])
-        
-        # Right side: use right-to-left sweep waveforms (reversed)
-        for i in empty_list_R:
-            if i < self.num_tweezers - 1:
-                segment_queue_R.append(self.segment_list[2*(self.num_tweezers-1)-i-1])
-        
-        segment_queue_R = np.flip(segment_queue_R)
-        
-        return segment_queue_L, segment_queue_R
-    
-    def configure_left_sorting(self, segment_queue_L, start_step=1, next_if_no_right=None):
-        """
-        Configure AWG sequence steps for left-to-right sorting.
-        
-        Parameters
-        ----------
-        segment_queue_L : list
-            List of segment indices for left sorting
-        start_step : int
-            Starting step number (default: 1)
-        next_if_no_right : int, optional
-            Next step if there's no right sorting to do
-            
-        Returns
-        -------
-        int : Last step number configured
-        """
-        if len(segment_queue_L) == 0:
-            return start_step - 1
-        
-        print('left sorting')
-        
-        # Configure intermediate steps
-        for k in range(len(segment_queue_L) - 1):
-            lStep = start_step + k
-            llSegment = segment_queue_L[k]
-            llLoop = 1
-            llNext = start_step + k + 1
-            llCondition = SPCSEQ_ENDLOOPALWAYS
-            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-            spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-        
-        # Configure last step
-        lStep = start_step + len(segment_queue_L) - 1
-        llSegment = segment_queue_L[-1]
-        llLoop = 1
-        
-        return lStep
-    
-    def configure_right_sorting(self, segment_queue_R, start_step, final_next_step):
-        """
-        Configure AWG sequence steps for right-to-left sorting.
-        
-        Parameters
-        ----------
-        segment_queue_R : list
-            List of segment indices for right sorting
-        start_step : int
-            Starting step number
-        final_next_step : int
-            Final next step after right sorting completes
-            
-        Returns
-        -------
-        int : Last step number configured
-        """
-        if len(segment_queue_R) == 0:
-            return start_step - 1
-        
-        print('right sorting')
-        
-        # Configure intermediate steps
-        for k in range(len(segment_queue_R) - 1):
-            lStep = start_step + k
-            llSegment = segment_queue_R[k]
-            llLoop = 1
-            llNext = start_step + k + 1
-            llCondition = SPCSEQ_ENDLOOPALWAYS
-            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-            spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-        
-        # Configure last step
-        lStep = start_step + len(segment_queue_R) - 1
-        llSegment = segment_queue_R[-1]
-        llLoop = 1
-        llNext = final_next_step
-        llCondition = SPCSEQ_ENDLOOPALWAYS
-        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-        spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-        
-        return lStep
-    
-    def configure_sorting_sequence(self, empty_list_L, empty_list_R, 
-                                   include_boundary_in_left=False,
-                                   start_step=1,
-                                   final_next_step=None,
-                                   next_if_no_right=None,
-                                   next_if_no_left=None):
-        """
-        Complete sorting sequence configuration: processes empty list and configures all steps.
-        
-        Parameters
-        ----------
-        empty_list_L : np.array
-            Left side empty tweezer indices
-        empty_list_R : np.array
-            Right side empty tweezer indices
-        include_boundary_in_left : bool
-            Whether to include boundary in left side (second sort)
-        start_step : int
-            Starting step number
-        final_next_step : int
-            Final next step after sorting completes
-        next_if_no_right : int, optional
-            Next step if no right sorting
-        next_if_no_left : int, optional
-            Next step if no left sorting
-            
-        Returns
-        -------
-        dict : Configuration results with step numbers and queues
-        """
-        # Build segment queues
-        segment_queue_L, segment_queue_R = self.build_segment_queues(empty_list_L, empty_list_R)
-        
-        # Configure left sorting
-        if len(segment_queue_L) > 0:
-            last_left_step = self.configure_left_sorting(segment_queue_L, start_step, next_if_no_right)
-            
-            # Set next step for last left step
-            if len(segment_queue_R) > 0:
-                llNext = last_left_step + 1  # Go to right sorting
-            else:
-                llNext = next_if_no_right if next_if_no_right else final_next_step
-                if llNext == 2*self.num_tweezers + 21:
-                    print('dropping')
-            
-            # Update last left step
-            llSegment = segment_queue_L[-1]
-            llLoop = 1
-            llCondition = SPCSEQ_ENDLOOPALWAYS
-            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-            spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + last_left_step, int64(llValue))
-            
-            # Configure right sorting if needed
-            if len(segment_queue_R) > 0:
-                right_start = last_left_step + 1
-                self.configure_right_sorting(segment_queue_R, right_start, final_next_step)
-            else:
-                # No right sorting, go to final step
-                if next_if_no_right is None:
-                    lStep = 2 * self.num_tweezers + 100
-                    llSegment = 2 * self.num_tweezers - 2  # static
-                    llLoop = 1
-                    llNext = 0
-                    llCondition = SPCSEQ_ENDLOOPALWAYS
-                    llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                    spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-        
-        # Only right sorting (no left)
-        elif len(segment_queue_R) > 0:
-            print('right sorting 2')
-            self.configure_right_sorting(segment_queue_R, start_step, final_next_step)
-        
-        # No sorting needed
-        else:
-            if next_if_no_left:
-                lStep = start_step
-                llLoop = 1
-                llSegment = 2*self.num_tweezers - 2  # static
-                llNext = next_if_no_left
-                llCondition = SPCSEQ_ENDLOOPALWAYS
-                llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                spcm_dwSetParam_i64(self.hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-        
-        return {
-            'segment_queue_L': segment_queue_L,
-            'segment_queue_R': segment_queue_R,
-            'empty_list_L': empty_list_L,
-            'empty_list_R': empty_list_R
-        }
-
-
 class TestEventHandler(PatternMatchingEventHandler):
 
     # i_counter=0
 
-    def __init__(self, Cycle_num, drop_num, AXA_num, sorting_helper, *args, **kwargs):
+    def __init__(self, Cycle_num, drop_num, AXA_num, *args, **kwargs):
         super(TestEventHandler, self).__init__(*args, **kwargs)
         self.last_created = None
         self.Cycle_num = Cycle_num
@@ -314,7 +36,6 @@ class TestEventHandler(PatternMatchingEventHandler):
         self.shot_counter=0
         self.tic = time.perf_counter()
         self.bad_shot_list=[]
-        self.sorting_helper = sorting_helper
 
 
     def on_created(self, event):
@@ -322,57 +43,31 @@ class TestEventHandler(PatternMatchingEventHandler):
         tic_1 = time.perf_counter()
 
         path = event.src_path
-        print('on created')
-        # Check if file was created within the last 5 minutes
-        try:
-            file_path = Path(path)
-            file_creation_time = file_path.stat().st_ctime
-            current_time = time.time()
-            time_since_creation = current_time - file_creation_time
-            
-            # Only process files created within the last 5 minutes (300 seconds)
-            if time_since_creation > 300:
-                print(f'Skipping {path}: file is {time_since_creation/60:.2f} minutes old (older than 5 minutes)')
-                return
-        except (OSError, ValueError) as e:
-            print(f'Error checking file creation time for {path}: {e}')
-            return
-        
         if path != self.last_created:
             self.last_created = path
             # tic = time.perf_counter()
             print(f'{event.src_path} has been created!')
-            time.sleep(0.005)
+            time.sleep(0.05)
 
             try:
-                curr_time = time.perf_counter()
-                # print("Current time: ", curr_time)
-                time_since_trig = curr_time - tic_1
-                # print("Time since trigger: ", time_since_trig)
                 hf = h5py.File(f'{event.src_path} ', 'r')
             except:
-                time.sleep(0.005)
+                time.sleep(0.05)
                 hf = h5py.File(f'{event.src_path} ', 'r')
                 print('exception')
-            # print('read file')
+            print('read file')
             im_array = np.array(hf['frame-00'])
             hf.close()
             atom_count, empty_list = analyze_image(im_array, tweezer_freq_list, num_tweezers)
-            # print("Total atoms detected: ", atom_count)
-            num_empty = len(empty_list)
-            # print("Total empty tweezers detected: ", num_empty)
             print(atom_count, empty_list)
-
             tic_2 = time.perf_counter()
             try:
-                print('Elapsed time (ms): ', np.round(1000*(tic_2-tic_1),3))
+                print('tic_2-tic_1', tic_2-tic_1)
                 time_diff = tic_2-tic_1
-                print('before event handler')
             except:
                 time_diff = 0
-
             if time_diff>0.8:
-                print('bad shot occurred due to slow time, skipping')
+                print('skipping')
                 self.bad_shot_list.append(self.shot_counter+1)
                 lStep = 1
                 llSegment = 2 * num_tweezers - 2
@@ -383,79 +78,218 @@ class TestEventHandler(PatternMatchingEventHandler):
                 spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
             else:
             ##################################################################
-                print('event handler')
                 if 0 < atom_count:
-                    # Use helper to process empty list and build queues (second sort: include boundary in left)
-                    empty_list_L, empty_list_R, boundary = self.sorting_helper.process_empty_list(
-                        empty_list, include_boundary_in_left=True
-                    )
-                    segment_queue_L, segment_queue_R = self.sorting_helper.build_segment_queues(
-                        empty_list_L, empty_list_R
-                    )
-                    # print(f'segment_queue_L = {segment_queue_L}')
-                    # print(f'segment_queue_R = {segment_queue_R}')
+                    segment_queue_L = []
+                    segment_queue_R = []
+                    # now divide into left and right sides of the boundary
+                    mask_empty = np.diff(empty_list) > 1
+                    for i in range(len(mask_empty)):
+                        if mask_empty[i] and empty_list[0] == 0:
+                            empty_list_reduced = empty_list[i+1:]
+                            break
+                        else:
+                            empty_list_reduced = empty_list
+                    for i in range(len(mask_empty)):
+                        if mask_empty[-1-i] and empty_list[-1] == num_tweezers-1:
+                            empty_list_reduced = empty_list_reduced[:-1-i]
+                            break
+                    # drop an extra atom if len(empty_list) is odd (this means the num of loaded tweezers is also odd, assuming num_tweezers is even)
+                    # if len(empty_list)%2 and len(empty_list_reduced)>0:
+                    #     if empty_list_reduced[0] != 0:
+                    #         print('extra drop')
+                    #         empty_list_reduced.append(empty_list_reduced[0]-1)
+                    #     elif empty_list_reduced[-1] != num_tweezers-1:
+                    #         print('extra drop')
+                    #         empty_list_reduced.append(empty_list_reduced[-1]+1)
+                    # elif len(empty_list)%2 and len(empty_list_reduced)==0:
+                    #     for i in range(len(mask_empty)):
+                    #         if mask_empty[i] and empty_list[0] == 0:
+                    #             empty_list_reduced.append(empty_list[i]+1)
+                    #             print('extra drop')
+                    #             break
+                    #         elif mask_empty[-1 - i] and empty_list[-1] == num_tweezers - 1:
+                    #             empty_list_reduced.append(empty_list[-1 - i]-1)
+                    #             print('extra drop')
+                    #             break
 
-                    # Configure sorting sequence using helper methods
+                    # now divide into left and right sides of the boundary
+                    empty_list_reduced=np.sort(empty_list_reduced)
+                    print('empty_list_reduced:', empty_list_reduced)
+                    num_empty = len(empty_list)
+                    boundary = empty_list[int(num_empty / 2)]
+                    print('boundary:', boundary)
+                    mask_L = empty_list_reduced <= boundary
+                    mask_R = empty_list_reduced > boundary
+                    empty_list_L = empty_list_reduced[mask_L]
+                    empty_list_R = empty_list_reduced[mask_R]
+                    for i in empty_list_L:
+                        if i > 0:
+                            segment_queue_L.append(segment_list[i - 1])
+                    for i in empty_list_R:
+                        if i < num_tweezers-1:
+                            segment_queue_R.append(segment_list[2*(num_tweezers-1)-i-1])
+                    segment_queue_R = np.flip(segment_queue_R)
+                    print(f'segment_queue_L = {segment_queue_L}')
+                    print(f'segment_queue_R = {segment_queue_R}')
+
                     if len(segment_queue_L) > 0:
-                        # Left sorting exists
-                        last_left_step = self.sorting_helper.configure_left_sorting(segment_queue_L, start_step=1)
-                        
-                        # Set next step for last left step
-                        if len(segment_queue_R) > 0:
-                            llNext = last_left_step + 1  # Go to right sorting
-                        else:
-                            print('dropping')
-                            llNext = 2*num_tweezers + 21  # Go to drop
-                        
-                        # Update last left step
-                        llSegment = segment_queue_L[-1]
-                        llLoop = 1
-                        llCondition = SPCSEQ_ENDLOOPALWAYS
-                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + last_left_step, int64(llValue))
-                        
-                        # Configure right sorting if needed
-                        if len(segment_queue_R) > 0:
-                            right_start = last_left_step + 1
-                            self.sorting_helper.configure_right_sorting(segment_queue_R, right_start, 2*num_tweezers + 21)
-                        else:
-                            # No right sorting, go to static then drop
-                            lStep = 2 * num_tweezers + 100
-                            llSegment = 2 * num_tweezers - 2  # static
-                            llLoop = 1
-                            llNext = 0
-                            llCondition = SPCSEQ_ENDLOOPALWAYS
+                        print('left sorting')
+                        for k in range(len(segment_queue_L) - 1):
+                            # print(segment_queue_L[k])
+                            lStep = k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                            llSegment = segment_queue_L[k]  # associated data memory segment
+                            llLoop = 1  # pattern repeated once
+                            llNext = k + 2  # next step is the next sweep
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                             llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                             spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                    
-                    elif len(segment_queue_R) > 0:
-                        # Only right sorting
-                        self.sorting_helper.configure_right_sorting(segment_queue_R, start_step=1, final_next_step=2*num_tweezers + 21)
-                    
+
+
+                        lStep = len(segment_queue_L)  # current step is the last one in segment_queue
+                        llSegment = segment_queue_L[-1]  # associated data memory segment
+                        llLoop = 1  # pattern repeated once
+                        if len(segment_queue_R) > 0:
+                            llNext = len(segment_queue_L) + 1 # next go to resorting on the right
+                        else:
+                            print('dropping')
+                            llNext = 2*num_tweezers + 21
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        if len(segment_queue_R) > 0:
+                            print('right sorting 1')
+                            for k in range(len(segment_queue_R) - 1):
+                                lStep = len(segment_queue_L) + k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                                llSegment = segment_queue_R[k]  # associated data memory segment
+                                llLoop = 1  # pattern repeated once
+                                llNext = len(segment_queue_L) + k + 2  # next step is the next sweep
+                                llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                                llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                                spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                            lStep = len(segment_queue_L) + len(segment_queue_R)  # current step is the last one in segment_queue
+                            llSegment = segment_queue_R[-1]  # associated data memory segment
+                            llLoop = 1  # pattern repeated once
+                            llNext = 2*num_tweezers + 21  # this is sort of random, just want a number that is not called before
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        else:
+                            lStep = 2 * num_tweezers + 100
+                            llSegment = 2 * num_tweezers - 2  # the static waveform
+                            llLoop = 1
+                            # trigResult = spcm_dwSetParam_i32(hCard, SPC_M2CMD, M2CMD_CARD_WAITTRIGGER)
+                            # if trigResult == ERR_TIMEOUT:
+                            #     llNext = 0
+                            #     print('missed trig')
+                            # else:
+                            #     llNext = 2 * num_tweezers + 22 + num_cicero_loops-1  # next step is 0
+                            llNext = 0
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            # print(f'{num_cicero_loops + 3}th trig')
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                    elif len(segment_queue_R) > 0 and len(segment_queue_L) == 0:
+                        print('right sorting 2')
+                        for k in range(len(segment_queue_R) - 1):
+                            # print(segment_queue_R[k])
+                            lStep = k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                            llSegment = segment_queue_R[k]  # associated data memory segment
+                            llLoop = 1  # pattern repeated once
+                            llNext = k + 2  # next step is the next sweep
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                        lStep = len(segment_queue_R)  # current step is the last one in segment_queue
+                        llSegment = segment_queue_R[-1]  # associated data memory segment
+                        llLoop = 1  # pattern repeated once
+                        llNext = 2 * num_tweezers + 21  # this is sort of random, just want a number that is not called before
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
                     else:
-                        # No sorting needed, go to drop
-                        lStep = 1
-                        llLoop = 1
-                        llSegment = 2*num_tweezers-1 + self.drop_counter  # the drop waveform
+                        lStep = 1  # current step is step 1
+                        llLoop = 1  # pattern repeated once
+                        llSegment = 2*num_tweezers-1 + self.drop_counter # the drop waveform
                         llNext = 0
-                        llCondition = SPCSEQ_ENDLOOPALWAYS
+                        # if len(segment_queue_R) > 0:
+                        #     llSegment = segment_queue_R[0]  # start resorting on the right
+                        #     llNext = 2  # go to next resort on the right. potential problem here is that when we start the for loop
+                        #                 # for resorting on the right, we'll overwrite step1.
+                        #     print('potential issue')
+                        # else:
+                        #     llSegment = segment_list[-1]  #num_tweezers # static
+                        #     llNext = 0
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                         llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                         spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
                     lStep = 2 * num_tweezers + 21
                     print(f"####################{self.drop_counter}###################")
                     llSegment = 2 * num_tweezers - 1 + self.drop_counter  # the drop waveform
-                    llLoop = int(5 * 0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated once
+                    llLoop = int(10 * 0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated once
                     llNext = 2 * num_tweezers + 100  # 0  # next step is 0
                     llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                     tic1 = time.perf_counter()
                     # print('2nd trig')
                     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                    print('start of axa')
+
 
                     ##################### Start of AXA ############################
-                    if multi_trig == True:
+                    if multi_trig == True and hold_drop:
+                        lStep = 2 * num_tweezers + 100
+                        # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 22
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        # print(f'{loop_num + 3}th trig')
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 22
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter))  # 2 * num_tweezers  # sweep to 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 23
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 23
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 1)  # 2 * num_tweezers + 1  # 5.5lambda shifted by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 24  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG  # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+                        toc1 = time.perf_counter()
+                        # print(toc1 - tic1)
+                        lStep = 2 * num_tweezers + 24
+                        llSegment = int(len(wf_list) - 3*(self.AXA_num-self.AXA_counter) + 2)  # 2 * num_tweezers + 2  # sweep back by Lo4
+                        llLoop = 1
+                        llNext = 2 * num_tweezers + 25  # 0 # 2 * num_tweezers + 100  # next step is 0
+                        llCondition =  SPCSEQ_ENDLOOPALWAYS # SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = 2 * num_tweezers + 25
+                        # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                        llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
+                        llLoop = 1
+                        llNext = 0
+                        llCondition = SPCSEQ_ENDLOOPONTRIG
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    elif multi_trig == True:
                         lStep = 2 * num_tweezers + 100
                         llSegment = 2 * num_tweezers - 2  # the static waveform
                         llLoop = 1
@@ -518,37 +352,11 @@ class TestEventHandler(PatternMatchingEventHandler):
                         lStep = 2 * num_tweezers + 100
 
                         if hold_drop:
-                            llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            # llSegment = 2 * num_tweezers - 1 + self.drop_counter # the drop waveform
+                            llSegment = 2 * num_tweezers - 1 + 0 # the first drop waveform
                             llLoop = 1
                             llNext = 0
-                            llCondition = SPCSEQ_ENDLOOPONTRIG
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                        elif hold_drop_sweep:
-                            print('hold drop sweep')
-                            llSegment = 2 * num_tweezers - 1 + self.drop_counter  # the drop waveform
-                            llLoop = 1
-                            llNext = 2 * num_tweezers + 101
-                            llCondition = SPCSEQ_ENDLOOPONTRIG
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-
-                            lStep=2 * num_tweezers + 101
-                            llSegment = 2 * num_tweezers - 1 + len(drop_list) + len(flattened_AXA_list)   # sweep
-                            llLoop = 1
-                            llNext = 2 * num_tweezers + 102
-                            llCondition = SPCSEQ_ENDLOOPALWAYS
-                            # print(f'{loop_num + 3}th trig')
-                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-
-                            lStep = 2 * num_tweezers + 102
-                            llSegment = 2 * num_tweezers - 1 + len(drop_list) +len(flattened_AXA_list)+1 #
-                            llLoop = 1
-                            llNext = 0
-                            llCondition = SPCSEQ_ENDLOOPONTRIG
+                            llCondition = SPCSEQ_ENDLOOPONTRIG  # unconditionally leave current step
                             # print(f'{loop_num + 3}th trig')
                             llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                             spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
@@ -567,16 +375,16 @@ class TestEventHandler(PatternMatchingEventHandler):
 
                     llSegment = 2*num_tweezers-1 + self.drop_counter #2*num_tweezers - 2   # drop
                     # llLoop = int(25*4003200/wf_list[-1].SampleLength)  # pattern repeated once
-                    llLoop = int(1 * 0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated once
+                    llLoop = int(5 * 0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated once
                     llNext = 0  # go back to step 0
                     llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
                 # toc = time.perf_counter()
-                # print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
+                print(f'Cycle {self.i_counter:0.0f} of {self.Cycle_num:0.0f}')
                 self.current_time = time.time()
-                # print("********************************")
+                print("********************************")
 
                 # date_dir_log = datetime.datetime.now().strftime("%Y\%m\%d")
                 # DIR_DATA_log = Path('X:/', 'expdata-e6', 'data', date_dir_log, "run_test")
@@ -591,9 +399,9 @@ class TestEventHandler(PatternMatchingEventHandler):
                 #     log_file.write(log_entry)
                 ##########################################################
 
-                # print(f'Cycle {self.drop_counter:0.0f} of {self.drop_num:0.0f} in drop waveforms')
-                # print(f'Cycle {self.AXA_counter:0.0f} of {self.AXA_num:0.0f} in AXA waveforms')
-                # print("*******************************")
+                print(f'Cycle {self.drop_counter:0.0f} of {self.drop_num:0.0f} in drop waveforms')
+                print(f'Cycle {self.AXA_counter:0.0f} of {self.AXA_num:0.0f} in AXA waveforms')
+                print("*******************************")
                 # if (self.current_time - self.previous_time > 13):
                 #     print('missed trigger!')
                 #     self.i_counter = (self.i_counter + 2) % self.Cycle_num
@@ -616,7 +424,7 @@ class TestEventHandler(PatternMatchingEventHandler):
                 self.shot_counter += 1
                 print('shot', self.shot_counter)
                 toc = time.perf_counter()
-                print(f'analysis took {toc - self.tic:0.4f} seconds')
+                print(f'analysis took {toc - self.tic:0.6f} seconds')
                 print('bad_shot_list:', self.bad_shot_list)
                 self.tic=toc
 
@@ -624,12 +432,11 @@ class TestEventHandler(PatternMatchingEventHandler):
 class TestEventHandler_1(PatternMatchingEventHandler):
 
 
-    def __init__(self, drop_num, sorting_helper, *args, **kwargs):
+    def __init__(self, drop_num,  *args, **kwargs):
         super(TestEventHandler_1, self).__init__(*args, **kwargs)
         self.drop_num = drop_num
         self.drop_counter=0
         self.last_created = None
-        self.sorting_helper = sorting_helper
 
     def on_created(self, event):
 
@@ -639,114 +446,156 @@ class TestEventHandler_1(PatternMatchingEventHandler):
         tic_1 = time.perf_counter()
 
         path = event.src_path
-        
-        # Check if file was created within the last 5 minutes
-        try:
-            file_path = Path(path)
-            file_creation_time = file_path.stat().st_ctime
-            current_time = time.time()
-            time_since_creation = current_time - file_creation_time
-            
-            # Only process files created within the last 5 minutes (300 seconds)
-            if time_since_creation > 300:
-                print(f'Skipping {path}: file is {time_since_creation/60:.2f} minutes old (older than 5 minutes)')
-                return
-        except (OSError, ValueError) as e:
-            print(f'Error checking file creation time for {path}: {e}')
-            return
-        
         if path != self.last_created:
             self.last_created = path
             # tic = time.perf_counter()
             print(f'{event.src_path} has been created!')
-            time.sleep(0.005)
+            time.sleep(0.05)
             try:
                 hf = h5py.File(f'{event.src_path} ', 'r')
             except:
-                time.sleep(0.005)
+                time.sleep(0.05)
                 hf = h5py.File(f'{event.src_path} ', 'r')
                 print('exception')
-            # print('read file')
+            print('read file')
             im_array = np.array(hf['frame-00'])
             hf.close()
             atom_count, empty_list = analyze_image(im_array, tweezer_freq_list, num_tweezers)
-            # print("Total atoms detected: ", atom_count)
-            num_empty = len(empty_list)
-            # print("Total empty tweezers detected: ", num_empty)
             print(atom_count, empty_list)
             tic_2 = time.perf_counter()
             try:
-                print('Elapsed time (ms): ', np.round(1000*(tic_2 - tic_1),3))
+                print('tic_2-tic_1', tic_2 - tic_1)
                 time_diff = tic_2 - tic_1
-                print('time diff')
             except:
                 time_diff = 0
             ##################################################################
             empty_list = np.array(empty_list)
             if 0 < atom_count:
-                # Use helper to process empty list and build queues (first sort: exclude boundary from left)
-                empty_list_L, empty_list_R, boundary = self.sorting_helper.process_empty_list(
-                    empty_list, include_boundary_in_left=False
-                )
-                segment_queue_L, segment_queue_R = self.sorting_helper.build_segment_queues(
-                    empty_list_L, empty_list_R
-                )
-                # print(f'segment_queue_L = {segment_queue_L}')
-                # print(f'segment_queue_R = {segment_queue_R}')
+                segment_queue_L = []
+                segment_queue_R = []
+                # now divide into left and right sides of the boundary
+                mask_empty = np.diff(empty_list) > 1
+                for i in range(len(mask_empty)):
+                    if mask_empty[i] and empty_list[0] == 0:
+                        empty_list_reduced = empty_list[i+1:]
+                        break
+                    else:
+                        empty_list_reduced = empty_list
+                for i in range(len(mask_empty)):
+                    if mask_empty[-1-i] and empty_list[-1] == num_tweezers-1:
+                        empty_list_reduced = empty_list_reduced[:-1-i]
+                        break
+                # now divide into left and right sides of the boundary
+                empty_list_reduced=np.array(empty_list_reduced)
+                print('empty_list_reduced:', empty_list_reduced)
+                num_empty = len(empty_list)
+                boundary = empty_list[int(num_empty / 2)]
+                print('boundary:', boundary)
+                mask_L = empty_list_reduced < boundary
+                mask_R = empty_list_reduced >= boundary
+                empty_list_L = empty_list_reduced[mask_L]
+                empty_list_R = empty_list_reduced[mask_R]
+                for i in empty_list_L:
+                    if i > 0:
+                        segment_queue_L.append(segment_list[i - 1])
+                for i in empty_list_R:
+                    if i < num_tweezers-1:
+                        segment_queue_R.append(segment_list[2*(num_tweezers-1)-i-1])
+                segment_queue_R = np.flip(segment_queue_R)
+                print(f'segment_queue_L = {segment_queue_L}')
+                print(f'segment_queue_R = {segment_queue_R}')
 
-                # Configure sorting sequence using helper methods (first sort)
                 if len(segment_queue_L) > 0:
-                    # Left sorting exists
-                    last_left_step = self.sorting_helper.configure_left_sorting(segment_queue_L, start_step=1)
-                    
-                    # Set next step for last left step
-                    if len(segment_queue_R) > 0:
-                        llNext = last_left_step + 1  # Go to right sorting
-                    else:
-                        print('dropping')
-                        llNext = 2*num_tweezers + 21  # Go to final step
-                    
-                    # Update last left step
-                    llSegment = segment_queue_L[-1]
-                    llLoop = 1
-                    llCondition = SPCSEQ_ENDLOOPALWAYS
-                    llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
-                    spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + last_left_step, int64(llValue))
-                    
-                    # Configure right sorting if needed
-                    if len(segment_queue_R) > 0:
-                        right_start = last_left_step + 1
-                        self.sorting_helper.configure_right_sorting(segment_queue_R, right_start, 2*num_tweezers + 21)
-                    else:
-                        # No right sorting, go to static
-                        lStep = 2 * num_tweezers + 100
-                        llSegment = 2 * num_tweezers - 2  # static
-                        llLoop = 1
-                        llNext = 0
-                        llCondition = SPCSEQ_ENDLOOPALWAYS
+                    print('left sorting')
+                    for k in range(len(segment_queue_L) - 1):
+                        # print(segment_queue_L[k])
+                        lStep = k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                        llSegment = segment_queue_L[k]  # associated data memory segment
+                        llLoop = 1  # pattern repeated once
+                        llNext = k + 2  # next step is the next sweep
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                         llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                         spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                
-                elif len(segment_queue_R) > 0:
-                    # Only right sorting
-                    self.sorting_helper.configure_right_sorting(segment_queue_R, start_step=1, final_next_step=2*num_tweezers + 21)
-                
-                else:
-                    # No sorting needed, go to static
-                    lStep = 1
-                    llLoop = 1
-                    llSegment = 2*num_tweezers-2  # static
-                    llNext = 0
-                    llCondition = SPCSEQ_ENDLOOPALWAYS
+
+
+                    lStep = len(segment_queue_L)  # current step is the last one in segment_queue
+                    llSegment = segment_queue_L[-1]  # associated data memory segment
+                    llLoop = 1  # pattern repeated once
+                    if len(segment_queue_R) > 0:
+                        llNext = len(segment_queue_L) + 1 # next go to resorting on the right
+                    else:
+                        print('dropping')
+                        llNext = 2*num_tweezers + 21
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    if len(segment_queue_R) > 0:
+                        print('right sorting 1')
+                        for k in range(len(segment_queue_R) - 1):
+                            lStep = len(segment_queue_L) + k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                            llSegment = segment_queue_R[k]  # associated data memory segment
+                            llLoop = 1  # pattern repeated once
+                            llNext = len(segment_queue_L) + k + 2  # next step is the next sweep
+                            llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                            llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                            spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                        lStep = len(segment_queue_L) + len(segment_queue_R)  # current step is the last one in segment_queue
+                        llSegment = segment_queue_R[-1]  # associated data memory segment
+                        llLoop = 1  # pattern repeated once
+                        llNext = 2*num_tweezers + 21  # this is sort of random, just want a number that is not called before
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+                    else:
+                        lStep = 2 * num_tweezers + 100
+                        llSegment = 2 * num_tweezers - 2  # the static waveform
+                        # llSegment = 2 * num_tweezers - 2  # the static waveform
+                        llLoop = 1
+                        llNext = 0
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        # print(f'{num_cicero_loops + 3}th trig')
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                elif len(segment_queue_R) > 0 and len(segment_queue_L) == 0:
+                    print('right sorting 2')
+                    for k in range(len(segment_queue_R) - 1):
+                        # print(segment_queue_R[k])
+                        lStep = k + 1  # current step is step k+1 (+1 because step0 is the static config)
+                        llSegment = segment_queue_R[k]  # associated data memory segment
+                        llLoop = 1  # pattern repeated once
+                        llNext = k + 2  # next step is the next sweep
+                        llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                        llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                        spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
+
+                    lStep = len(segment_queue_R)  # current step is the last one in segment_queue
+                    llSegment = segment_queue_R[-1]  # associated data memory segment
+                    llLoop = 1  # pattern repeated once
+                    llNext = 2 * num_tweezers + 21  # this is sort of random, just want a number that is not called before
+                    llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                
-                # Final step always goes to static then back to step 0
+
+                else:
+                    lStep = 1  # current step is step 1
+                    llLoop = 1  # pattern repeated once
+                    llSegment = 2*num_tweezers-2 # the static waveform
+                    llNext = 0
+                    llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
+                    llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
+                    spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
+
                 lStep = 2 * num_tweezers + 21
-                llSegment = 2 * num_tweezers - 2  # static
-                llLoop = 1
-                llNext = 0
-                llCondition = SPCSEQ_ENDLOOPALWAYS
+                llSegment = 2 * num_tweezers - 2  # the static waveform
+                llLoop = 1  # pattern repeated once
+                llNext = 0  # 0  # next step is 0
+                llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                 llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                 spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
@@ -774,35 +623,19 @@ class TestEventHandler_2(PatternMatchingEventHandler):
 
     def on_created(self, event):
         path = event.src_path
-        
-        # Check if file was created within the last 5 minutes
-        try:
-            file_path = Path(path)
-            file_creation_time = file_path.stat().st_ctime
-            current_time = time.time()
-            time_since_creation = current_time - file_creation_time
-            
-            # Only process files created within the last 5 minutes (300 seconds)
-            if time_since_creation > 300:
-                print(f'Skipping {path}: file is {time_since_creation/60:.2f} minutes old (older than 5 minutes)')
-                return
-        except (OSError, ValueError) as e:
-            print(f'Error checking file creation time for {path}: {e}')
-            return
-        
         if path != self.last_created:
             self.last_created = path
             # tic = time.perf_counter()
             print(f'{event.src_path} has been created!')
-            time.sleep(0.005)
+            time.sleep(0.05)
 
             try:
                 hf = h5py.File(f'{event.src_path} ', 'r')
             except:
-                time.sleep(0.005)
+                time.sleep(0.05)
                 hf = h5py.File(f'{event.src_path} ', 'r')
                 print('exception')
-            # print('read file')
+            print('read file')
             im_array = np.array(hf['frame-00'])
             hf.close()
             atom_count, empty_list = analyze_image(im_array, tweezer_freq_list, num_tweezers)
@@ -825,54 +658,55 @@ class TestEventHandler_2(PatternMatchingEventHandler):
 
 
 if __name__ == '__main__':
-    print('running this file')
     # REGULAR SPACING
-    # spacing = 0.8
+    spacing = 0.64
     #FOUR LAMBDA
     # spacing = 0.64
-    # startfreq = 88
-    # ntraps = 40 # this is the num of tweezers we want
-    # path_folder = 'waveforms_80_40Twz_5lambda_susc-meas'
+    startfreq = 79.04
+    ntraps = 70 # this is the num of tweezers we want
+    path_folder = 'four lambda spacing - 70 tweezers'
     # path_folder = 'four lambda spacing'
     # path_folder = 'waveforms_100_40Twz_5lambda_hysteresis'
 
-    # eight lambda
-    # spacing = 1.28
-    # startfreq = 88
-    # ntraps = 30
-    # path_folder = 'EightLambda'
-
-    # six lambda
-    # spacing = 0.96
-    # startfreq = 83
-    # ntraps = 40
-    # path_folder = 'SixLambda-FortyTweezers'
-
-    path_folder = 'waveforms_80_40Twz_5lambda_susc-meas'
-    spacing = 0.8
-    startfreq = 88
-    ntraps = 40
-    spacing = 0.8
-    ntraps_drop = 40
-
-    # FOUR LAMBDA 40 tweezers
-    # spacing = 0.64
-    # # spacing = 0.64
-    # startfreq = 88.64
-    # ntraps = 40  # this is the num of tweezers we want
-    # path_folder = 'four lambda spacing - 70 tweezers'
-
-
-    multi_trig = False #if False (True) there should be 2 (5) tweezer_RF_trigs in cicero sequence; UPDATE 1/30/25 we realized we only need 2 triggers if multi_trig=False
-    hold_drop = False# True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
-    hold_drop_sweep = False # requires 4 tweezer triggers (tweezer sweep trig)
-    if hold_drop_sweep: hold_drop = False
+    multi_trig = True #if False (True) there should be 3 (5) tweezer_RF_trigs in cicero sequence;
+    hold_drop = True # True only if we want to drop several tweezer and stay at few tweezers, you will need to ramp twz intensity down in the cicero sequence at the same time
     # AXA_list = [
     #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5', 'sweep_from_5,5lambda_Spock_node_Delta=0l.h5']
     # ]
-    # AXA_list = [['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5']]
-    AXA_list = [['static.h5', 'static.h5', 'static.h5']]
-    # AXA_list = [['50tweezers.h5','50tweezers.h5','50tweezers.h5']]
+    # AXA_list = [['70tweezers_101.44center.h5','70tweezers_101.44center.h5','70tweezers_101.44center.h5']]
+    # AXA_list = [['40tweezers_sweep_to_halfint_antinode_PG3.h5','40tweezers_101.44center_4.5L_PG3.h5','40tweezers_sweep_from_halfint_antinode_PG3.h5']]
+
+
+
+    # AXA_list = [['40tweezers_102.72center_sweep_to_two_groups_new.h5',
+    #              '40tweezers_102.72center_two_groups_new.h5',
+    #              '40tweezers_102.72center_sweep_from_two_groups_new.h5']]
+
+    AXA_list = [['40tweezers_102.72center_sweep_to_4.5L_antinode.h5',
+                 '40tweezers_102.72center_4.5L_antinode.h5',
+                 '40tweezers_102.72center_sweep_from_4.5L_antinode.h5']]
+
+    # AXA_list = [['40tweezers_102.72center_sweep_to_3.5L_antinode.h5',
+    #              '40tweezers_102.72center_3.5L_antinode.h5',
+    #              '40tweezers_102.72center_sweep_from_3.5L_antinode.h5']]
+
+    # AXA_list = [['40tweezers_101.44center_sweep_to_3.5L_antinode.h5',
+    #              '40tweezers_101.44center_3.5L_antinode.h5',
+    #              '40tweezers_101.44center_sweep_from_3.5L_antinode.h5']]
+
+    # AXA_list = [['40tweezers_102.72center_4L_antinode.h5',
+    #              '40tweezers_102.72center_4L_antinode.h5',
+    #              '40tweezers_102.72center_4L_antinode.h5']]
+
+
+    # AXA_list = [['40tweezers_sweep_to_halfint_node.h5', '40tweezers_101.44center_4.5L_node.h5',
+    #              '40tweezers_sweep_from_halfint_node.h5']]
+
+    # AXA_list = [['70tweezers_sweep_to_halfint_node.h5', '70tweezers_101.44center_4.5L_node.h5',
+    #              '70tweezers_sweep_from_halfint_node.h5']]
+    # AXA_list = [['40tweezers_sweep_to_halfint_antinode.h5','40tweezers_101.44center_4.5L.h5','40tweezers_sweep_from_halfint_antinode.h5']]
+    # AXA_list =[['40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5','40tweezers_101.44center_4L_PG3.h5']]
+    # AXA_list =[['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5']]
     # AXA_list = [
     #     ['sweep_5to5,5lambda.h5', 'static_5,5lambda_antinode.h5',
     #      'sweep_5,5to5lambda.h5']
@@ -962,8 +796,8 @@ if __name__ == '__main__':
     #             ]
 
     # AXA_list = [
-    #     ['static.h5', 'static.h5',
-    #      'static.h5']
+    #     ['70tweezers_101.44center.h5', '70tweezers_101.44center.h5',
+    #      '70tweezers_101.44center.h5']
     #             ]
 
     # AXA_list = [
@@ -1000,35 +834,36 @@ if __name__ == '__main__':
     flattened_AXA_list = [item for row in AXA_list for item in row]
 
     # drop_list = ['drop_2_twz14,26.h5', 'drop_1_twz14.h5','drop_1_twz26.h5']
-    # # drop_list = ['drop_2_twz15,25_NPM_Power_Adjusted.h5']
-    # drop_list = ['drop_2_twz18,22.h5','drop_1_twz18.h5','drop_1_twz22.h5']
-    # drop_list = ['static.h5','drop_8.h5','drop_10.h5','drop_12.h5','drop_14.h5','drop_16.h5','drop_18.h5']
+    # drop_list = ['drop_2_twz15,25_NPM_Power_Adjusted.h5']
+    # drop_list = ['drop_2_twz18,22.h5']
+    # drop_list = ['70tweezers_101.44center.h5','drop_8.h5','drop_10.h5','drop_12.h5','drop_14.h5','drop_16.h5','drop_18.h5']
     # drop_list=['drop_16.h5','drop_16.h5','drop_14.h5','drop_12.h5','drop_12.h5']
-    # drop_list = ['drop_2_twz15,25_not_phase_match.h5']
-    # drop_list = ['drop2_20,25.h5']
+    # drop_list = ['70tweezers_101.44center.h5']
     # drop_list = ['drop_2_twz15,25.h5']
     # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
-    # drop_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5', 'drop_2_twz14,26.h5']
+    # drop_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5']
     # drop_list = ['drop_3_14,15,16.h5', 'drop_3_24,25,26.h5']
     # drop_list = ['drop_1_twz8.h5','drop_1_twz12.h5','drop_1_twz20.h5', 'drop_1_twz28.h5', 'drop_1_twz35.h5']
     # drop_list = ['drop_2_twz14,26.h5','drop_2_twz14,26.h5', 'drop_1_twz14.h5', 'drop_1_twz26.h5']
     # drop_list = ['drop_2_twz16,24.h5','drop_2_twz16,24.h5','drop_1_twz16.h5','drop_1_twz24.h5']
     # drop_list = ['drop_2_twz12,28.h5'] #, 'drop_2_twz12,28.h5', 'drop_1_twz12.h5', 'drop_1_twz28.h5']
     # drop_list = ['drop_1_twz10.h5', 'drop_1_twz30.h5']
-    # drop_list = ['drop5_twz18,19,20,21,22.h5'] # for mcm
+    # drop_list = ['drop1_35.h5']
     # drop_list = ['drop_1_twz20.h5']
-    # drop_list = ['drop15.h5']
-    # drop_list = ['drop1_20.h5']
-    drop_list = ['static.h5']
-    # drop_list = ['40tweezers_101.44center_blockade_drop_4L.h5']
-    # drop_list = ['drop_22.h5','drop_1_twz20.h5']
-    # drop_list = ['drop_1_twz5.h5', 'drop_1_twz8.h5', 'drop_1_twz14.h5', 'drop_1_twz20.h5', 'drop_1_twz26.h5', 'drop_1_twz30.h5']
-    sweep_droplist = ['sweep_to_twz10,15,20,25,30.h5', 'drop5_twz10,15,20,25,30.h5']
-    # sweep_droplist = ['drop5_twz18,19,20,21,22.h5','drop5_twz18,19,20,21,22.h5']
-    # sweep_droplist=['static.h5']
+    # drop_list = ['70tweezers_101.44center.h5']
+    drop_list = ['40tweezers_102.72center_4L_antinode.h5']
     # drop_list = ['40tweezers_101.44center_4L.h5']
-    # drop_list= ['drop1_35.h5']
-    # sweep_droplist = ['40tweezers_101.44center_4L.h5']
+        # ,'40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5'
+        # , '26tweezers_101.44center_4L.h5', '32tweezers_101.44center_4L.h5']
+    # drop_list = ['drop1_35.h5','drop1_50.h5', 'drop2_35,50.h5', 'drop2_35,50.h5']
+    # drop_list = ['drop2_35,42.h5', 'drop2_35,50.h5', 'drop2_20,35.h5',
+    #              'drop2_28,35.h5', 'drop2_20,50.h5','drop2_38,46.h5',
+    #              'drop1_20',  'drop1_28',
+    #              'drop1_35',  'drop1_42', 'drop1_50',
+    #              'drop1_24',
+    #              'drop1_32',  'drop1_38', 'drop1_46' ]
+    # drop_list = ['drop2_20,50']
+    #
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
     # static_list =
 
@@ -1038,9 +873,9 @@ if __name__ == '__main__':
     #     multi_trig_list =
 
     # cycle_list = ['drop_20.h5'] #, 'drop_middle_10_v2.h5']
-    # cycle_list = ['drop_16_v1.h5', 'drop_8_new.h5', 'static.h5']
+    # cycle_list = ['drop_16_v1.h5', 'drop_8_new.h5', '70tweezers_101.44center.h5']
     # cycle_list = ['drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_1_twz14.h5', 'drop_1_twz26.h5', 'drop_2_twz14,26.h5']
-    # cycle_list = ['static.h5'] #, 'drop_16_v1.h5', 'static.h5', 'drop_12.h5', 'static.h5', 'drop_8_new.h5', 'static.h5', 'drop_6.h5', 'drop_4.h5']
+    # cycle_list = ['70tweezers_101.44center.h5'] #, 'drop_16_v1.h5', '70tweezers_101.44center.h5', 'drop_12.h5', '70tweezers_101.44center.h5', 'drop_8_new.h5', '70tweezers_101.44center.h5', 'drop_6.h5', 'drop_4.h5']
 
 
     # startfreq = spacing * 125
@@ -1076,30 +911,21 @@ if __name__ == '__main__':
     #################### include sorting waveforms ########################
     sort_list_L = [f'sweep_{num}.h5' for num in range(1, ntraps)]
     sort_list_R = [f'sweep_{num}R.h5' for num in range(1, ntraps)]
-    # sort_list_L = [f'sweep40tweezers_{num}.h5' for num in range(1, ntraps)]
-    # sort_list_R = [f'sweep40tweezers_{num}R.h5' for num in range(1, ntraps)]
-    # sort_list_L = ['static.h5' for num in range(1, ntraps)]
-    # sort_list_R = ['static.h5' for num in range(1, ntraps)]
+    # sort_list_L = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
+    # sort_list_R = ['70tweezers_101.44center.h5' for num in range(1, ntraps)]
     sort_list = np.concatenate((sort_list_L, sort_list_R))
-    # print('buffer index:', 1+len(sort_list)+len(drop_list)+len(flattened_AXA_list)+len(sweep_droplist))
-    # print('sort list size',len(sort_list))
-    print(len(drop_list),len(flattened_AXA_list))
     # print(filename_list)
     wf_list = []
 
-
     for filename in sort_list:
         if os.access(Path(path_folder, filename), os.F_OK):  # ...retrieve the Waveforms from file.
-            # print("Path =", Path(path_folder, filename))
             wav_temp=utilities.from_file(Path(path_folder, filename), 'AB')
             wf_list.append(wav_temp)
             # print("#########################")
             # print(f"filename={filename} ,  samplelength={wav_temp.SampleLength}")
 
     # include static waveform
-    wav_temp = utilities.from_file(Path(path_folder, 'static.h5'), 'A')
-    # wav_temp = utilities.from_file(Path(path_folder, 'static_20_center.h5'), 'A')
-    # wav_temp = utilities.from_file(Path(path_folder, '40tweezers_101.44center_4L.h5'), 'A')
+    wav_temp = utilities.from_file(Path(path_folder, '70tweezers_101.44center.h5'), 'A')
     wf_list.append(wav_temp)
 
     # print("#########################")
@@ -1110,8 +936,6 @@ if __name__ == '__main__':
         wf_list.append(utilities.from_file_simple(Path(path_folder, filename), 'A'))
     # include multi trig AXA waveforms
     for filename in flattened_AXA_list:
-        wf_list.append(utilities.from_file_simple(Path(path_folder, filename), 'A'))
-    for filename in sweep_droplist:
         wf_list.append(utilities.from_file_simple(Path(path_folder, filename), 'A'))
     # include shifted waveform
     # wf_list.append(utilities.from_file_simple(Path(path_folder, 'static_shifted_-23970.h5'), 'A'))
@@ -1253,6 +1077,7 @@ if __name__ == '__main__':
 
 
     ##################################################################################################################
+    # setup_channels(amplitude=85, use_filter=False)
     setup_channels(amplitude=120, use_filter=False)
     _setup_clock()
     start_step = 0
@@ -1281,7 +1106,7 @@ if __name__ == '__main__':
     for j in range(len(segment_list)):
         # print("here")
         # print(j)
-        # print(wf_list[j].SampleLength)
+        print(wf_list[j].SampleLength)
         spcm_dwSetParam_i32(hCard, SPC_SEQMODE_WRITESEGMENT, segment_list[j])  # set current config switch to segment j
         spcm_dwSetParam_i32(hCard, SPC_SEQMODE_SEGMENTSIZE, wf_list[j].SampleLength)
         _write_segment([wf_list[j]], pv_buf_list[j], pn_buf_list[j], offset=0)
@@ -1317,18 +1142,11 @@ if __name__ == '__main__':
     ignore_directories = False
     case_sensitive = True
     missed_trigger_event = False
-    
-    # Create sorting helper to be shared by both event handlers
-    sorting_helper = SortingHelper(num_tweezers, segment_list, hCard)
-    
-    my_event_handler = TestEventHandler(N_cycle, len(drop_list), len(AXA_list), sorting_helper, 
-                                       patterns, ignore_patterns, ignore_directories, case_sensitive)
-    my_event_handler_1 = TestEventHandler_1(N_cycle, sorting_helper, 
-                                           patterns, ignore_patterns, ignore_directories, case_sensitive)
+    my_event_handler = TestEventHandler(N_cycle,len(drop_list), len(AXA_list), patterns, ignore_patterns, ignore_directories, case_sensitive)
+    my_event_handler_1 = TestEventHandler_1(N_cycle, patterns, ignore_patterns, ignore_directories, case_sensitive)
     my_event_handler_2 = TestEventHandler_2(missed_trigger_event, patterns, ignore_patterns, ignore_directories, case_sensitive)
 
-    # print('here')
-    print('hold drop sweep', hold_drop_sweep)
+    print('here')
 
 
     path = DIR_DATA

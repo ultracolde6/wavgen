@@ -7,19 +7,20 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    ntraps = 41  # this is the num of tweezers we want, plus 1
+    ntraps = 31  # this is the num of tweezers we want, plus 1
     max_list = []
 
     phase_diff = np.arange(ntraps-1) / (ntraps - 2) * 2 * np.pi
     phasesB = np.cumsum(phase_diff)
 
-    sweep_mode = "shiftedlinear"
-    sweep_time = 0.08
-    spacing = 0.8E6
+    sweep_mode = "cosine"
+    sweep_time = 0.16
+    spacing = 0.16E6 * 6
+    center_freq = 101.44E6
     # ind = 14 # the index of the tweezer we want to displace. Need to -1 for R to L
 
-    startfreq = 88.04E6  # need to -spacing for L waveforms, don't for R waveforms
-
+    # startfreq = 88.04E6  # need to -spacing for L waveforms, don't for R waveforms
+    startfreq = center_freq - (ntraps + 1) / 2 * spacing
     f_list = [startfreq + j * spacing for j in range(ntraps)]
     # f_list[ind] += 0.04E6
     print(f_list)

@@ -10,16 +10,16 @@ from pathlib import Path
 if __name__ == '__main__':
     for fraction in [0]:
         # bias=1/fraction
-        sweep_time=0.16 # in units of ms
+        sweep_time=0.48 # in units of ms
         sweep_mode="cosine"
         bias=0
-        ntraps = 22
+        ntraps = 30
         shift_Lambda = 0 #+ 1 / 16
         Lambda = 0.16E6
         shift = shift_Lambda*Lambda
-        CenterFreq = 104E6
-        spacing_A = 5*Lambda
-        spacing_B = 4.5*Lambda
+        CenterFreq = 101.44E6
+        spacing_A = 6*Lambda
+        spacing_B = 8*Lambda
         com_shift = 0
         startfreq_A = CenterFreq - ntraps/2 * spacing_A  # 86.4E6 + 0.04E6 #88.04E6
         startfreq_B = CenterFreq - ntraps/2 * spacing_B  # 86.4E6 + 0.04E6 #88.04E6
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         #         shift_list[i] = 0.04E6
         # print(shift_list)
         # freq_A = shift_list + freq_A
-        folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
+        folder_name = 'SixLambda-ThirtyTweezers'
         # create a new folder for waveforms to be saved to, if it doesn't already exist
 
 
@@ -65,7 +65,7 @@ if __name__ == '__main__':
             os.mkdir(f'{folder_name}')
             print(f'directory created')
 
-        name_temp = f'22_sweep5_to_4.5_antinode.h5'
+        name_temp = f'30tweezers_sweep_from_8L_Rydberg.h5'
         filename = Path(folder_name, name_temp)
         # If we have already computed the Waveforms...
         # if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.
@@ -77,7 +77,7 @@ if __name__ == '__main__':
         else:
             ## Define Waveform parameters ##
             print('computing new file')
-            ntraps_temp=22
+            ntraps_temp=30
             phase_diff = np.arange(ntraps_temp) / (ntraps_temp - 1) * 2 * np.pi
             phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
             phasesA = np.cumsum(phase_diff)
@@ -90,9 +90,9 @@ if __name__ == '__main__':
             print(freq_B)
 
             ## Superpositions defined with lists of frequencies ##
-            A = Superposition(freq_A, phases=phasesA) #, mags=magsA)
+            B = Superposition(freq_A, phases=phasesA) #, mags=magsA)
             print(freq_B)
-            B = Superposition(freq_B, phases=phasesB) #, mags=magsB)
+            A = Superposition(freq_B, phases=phasesB) #, mags=magsB)
 
             # ## A Sweep between the 2 previously defined stationary waves ##
             # AB = Sweep1(A, B, hold_time_a=0.5, hold_time_b= 0.5, sweep_time=0.2, ramp='cosine')

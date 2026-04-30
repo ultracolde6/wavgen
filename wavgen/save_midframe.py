@@ -16,18 +16,20 @@ from pathlib import Path
 
 if __name__ == '__main__':
     Lambda = 0.16E6
-    CenterFreq = 104E6
-    for fraction in [-3/80,-5/128]:
+    CenterFreq = 102.72E6
+    for fraction in [0]:
     # for fraction in [1/64]:
         # bias=Lambda/fraction
 
         # bias=0
-        folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
+        # folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
+        folder_name = 'four lambda spacing - 70 tweezers'
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
         # filename = Path(folder_name, 'drop_9.h5')
         # filename = Path(folder_name, 'static_5,5lambda_antinode.h5')
-        filename = Path(folder_name, f'static_5lambda_twogroup_node_Delta={fraction}l.h5')
+        # filename = Path(folder_name, f'static_5lambda_twogroup_node_Delta={fraction}l.h5')
+        filename = Path(folder_name,'40tweezers_102.72center_two_groups_new.h5')
 
         # create a new folder for waveforms to be saved to, if it doesn't already exist
         new_path = Path(folder_name)
@@ -46,9 +48,9 @@ if __name__ == '__main__':
             ntraps = 40  # this is the num of tweezers we want
             # ntraps = 1
             # startfreq = 88E6
-            CenterFreq = 104E6
+            CenterFreq = 102.72E6
 
-            spacing_Lambda = 5
+            spacing_Lambda = 4
             # shift_Lambda =  0*(2 + 1/2) #+ 1 / 16
             # shift = shift_Lambda * Lambda  # 0.8E6
 
@@ -142,12 +144,22 @@ if __name__ == '__main__':
             #         magsA[ii] = 1
             # for ii in range(16, 24):
             #     magsA[ii] = 1
-            phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
-            phasesA = np.cumsum(phase_diff)
+            # phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
+            # phasesA = np.cumsum(phase_diff)
             # phase_diff_1 = np.arange(int(ntraps/2))/(int(ntraps/2)-1)*2*np.pi
             # phases1 = np.cumsum(phase_diff_1)
-            # phasesA = np.concatenate([phases1, phases1+2*np.pi/(ntraps-2)])
+            # # phasesA = np.concatenate([phases1, phases1+2*np.pi/(ntraps-2)])
+            # phasesA = np.concatenate([phases1, -phases1[::-1]])
+            # # phasesA = np.concatenate([phases1, -phases1])
             # phasesA = utilities.rp[:len(freq_A)]
+
+            phase_diff_1 = np.arange(int(ntraps / 2)) / (int(ntraps / 2) - 1) * 2 * np.pi
+            phase_diff_2 = np.arange(1, int(ntraps / 2) + 1) / (int(ntraps / 2) - 1) * 2 * np.pi
+            phases1 = np.cumsum(phase_diff_1)
+            phases2 = np.cumsum(phase_diff_2)
+            phasesA = np.concatenate([phases1, phases2])
+
+
             A = wavgen.waveform.Superposition(freq_A, phases=phasesA, mags=magsA)  # One via the default constructor...
 
             A.compute_waveform(filename, 'A')

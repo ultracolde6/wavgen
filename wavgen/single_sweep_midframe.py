@@ -13,11 +13,12 @@ if __name__ == '__main__':
         sweep_time = 0.16
         sweep_mode = 'cosine'
         bias=0
-        ntraps = 46
+        ntraps = 40
         shift_Lambda = 0 # 2 + 1 / 2 #+ 1 / 16
         Lambda = 0.16E6
         shift = shift_Lambda*Lambda
-        CenterFreq = 101.44E6
+        # CenterFreq = 101.44E6
+        CenterFreq = 102.72E6
         spacing = 4*Lambda
         com_shift = 0* Lambda/4
         startfreq = CenterFreq - ntraps/2 * spacing  # 86.4E6 + 0.04E6 #88.04E6
@@ -25,31 +26,44 @@ if __name__ == '__main__':
         # freq_B = [88E6 +0.04E6+ 0.8E6*j for j in range(ntraps)]
         freq_A = [startfreq + com_shift + spacing*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
         # freq_B = [startfreq + com_shift + spacing*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
+        phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
+        phasesA = np.cumsum(phase_diff)
 
         ##################################################
-        # uniform stretch
-        CenterFreq = 101.44E6
-        spacingB = 5 * Lambda
-        com_shift =  0*Lambda/4
-        startfreqB = CenterFreq - ntraps/2 * spacingB  # 86.4E6 + 0.04E6 #88.04E6
-
-        # freq_B = [88E6 +0.04E6+ 0.8E6*j for j in range(ntraps)]
-        freq_B = [startfreqB + com_shift + spacingB*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
-        # freq_A = [startfreqB + com_shift + spacingB*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
+        # # uniform stretch
+        # # CenterFreq = 101.44E6
+        # CenterFreq = 102.72E6
+        # spacingB = 4.5 * Lambda
+        # com_shift =  0*Lambda/4
+        # startfreqB = CenterFreq - ntraps/2 * spacingB  # 86.4E6 + 0.04E6 #88.04E6
+        # freq_B = [startfreqB + com_shift + spacingB*j for j in range(ntraps)] #+ -1/128 * 0.16E6*(-1)**(j+1)
+        # phasesB = phasesA
 
         ####################################################
         # two group
-        # sym_shift = 0 * Lambda
-        # left_shift = -0.25 * Lambda - sym_shift
-        # right_shift = 0.25 * Lambda + sym_shift
-        #
-        # freq_init = np.array([startfreq + com_shift + j * spacing for j in range(ntraps)])
-        # freq_A = freq_init * 1.0
-        #
-        # freq_A[:int(ntraps / 2)] = freq_init[:int(ntraps / 2)] + left_shift
-        # freq_A[int(ntraps / 2):] = freq_init[:int(ntraps / 2)] + right_shift
+        sym_shift = 0 * Lambda
+        left_shift = -1.25 * Lambda - sym_shift
+        right_shift = 1.25 * Lambda + sym_shift
+
+        freq_init = np.array([startfreq + com_shift + j * spacing for j in range(ntraps)])
+        freq_B = freq_init * 1.0
+
+        freq_B[:int(ntraps / 2)] = freq_init[:int(ntraps / 2)] + left_shift
+        freq_B[int(ntraps / 2):] = freq_init[int(ntraps / 2):] + right_shift
 
 
+
+
+        phase_diff_1 = np.arange(int(ntraps / 2)) / (int(ntraps / 2) - 1) * 2 * np.pi
+        phase_diff_2 = np.arange(1, int(ntraps / 2)+1) / (int(ntraps / 2) - 1) * 2 * np.pi
+        phases1 = np.cumsum(phase_diff_1)
+        phases2 = np.cumsum(phase_diff_2)
+        phasesB = np.concatenate([phases1, phases2])
+        # phasesB = np.concatenate([phases1, -phases1])
+
+        # phasesB = phasesA
+
+        ####################################################
 
         # center_freq = freq_B[20]
         # print(center_freq)
@@ -86,7 +100,8 @@ if __name__ == '__main__':
             print(f'directory created')
 
         # name_temp = f'70tweezers_sweep_to_halfint_node.h5'
-        name_temp = f'46tweezers_sweep_to_5L_antinode.h5'
+        # name_temp = f'40tweezers_102.72center_sweep_to_4.5L_antinode.h5'
+        name_temp = f'40tweezers_102.72center_sweep_from_two_groups_new.h5'
         # name_temp = f'sweep_4,5to5lambda_fromleft.h5'
         filename = Path(folder_name, name_temp)
         # If we have already computed the Waveforms...
@@ -99,8 +114,6 @@ if __name__ == '__main__':
         else:
             ## Define Waveform parameters ##
             print('computing new file')
-            phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
-            phasesA = np.cumsum(phase_diff)
 
 
             ################## the following minimizes cost function 3 ##########################
@@ -116,18 +129,14 @@ if __name__ == '__main__':
             #                      1.01218521e+02, 1.07221170e+02, 1.13066712e+02, 1.19266267e+02 ])
             #######################################################################################
 
-            phasesB = phasesA
-            # phase_diff_1 = np.arange(int(ntraps / 2)) / (int(ntraps / 2) - 1) * 2 * np.pi
-            # phases1 = np.cumsum(phase_diff_1)
-            # phasesB = np.concatenate([phases1, phases1 + 2 * np.pi / (ntraps - 2)])
 
             print(freq_A)
             print(freq_B)
 
             ## Superpositions defined with lists of frequencies ##
-            A = Superposition(freq_A, phases=phasesA) #, mags=magsA)
+            B = Superposition(freq_A, phases=phasesA) #, mags=magsA)
 
-            B = Superposition(freq_B, phases=phasesB) #, mags=magsB)
+            A = Superposition(freq_B, phases=phasesB) #, mags=magsB)
 
             # ## A Sweep between the 2 previously defined stationary waves ##
             # AB = Sweep1(A, B, hold_time_a=0.5, hold_time_b= 0.5, sweep_time=0.2, ramp='cosine')

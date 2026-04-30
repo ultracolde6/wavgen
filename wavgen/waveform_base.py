@@ -329,10 +329,14 @@ class Waveform:
 
         ## Compute the Waveform ##
         max_val = self._parallelize(temp, self.compute, cpus)
-        # print(f'max val = {max_val}')
+        print("#######################################")
+        print(f'max val = {max_val}')
 
         ## Calculate Normalization Factor ##
-        # norm = (SAMP_VAL_MAX * self.Amplitude) / max_val
+        norm_max = (SAMP_VAL_MAX * self.Amplitude) / max_val
+
+        print(f"maximally allowed norm={norm_max}")
+        print("############################################")
         # norm =  1853.1916706522684 # 10/22/2023: for waveforms_160_40Twz_5,5lambda_v2; 0.72E6;  89.6E6
         # norm =  1853.1916706522684 # 10/22/2023: for waveforms_160_40Twz_4,5lambda_v2; 0.72E6;  89.6E6
         # norm = 1901.7220294766691 # 50 tweezers
@@ -364,10 +368,19 @@ class Waveform:
         # norm = 1722.857036876052 # 41twz_0,75MHz
         # norm = 2121.6211080626194 # 38twz_5lambda
         # norm = 2213.5579202456956 #40twz_5lambda
+        # norm = 1508.686484148412
+        norm = 4000
         # norm = 2179.192717236717 # 30twz_5_lambda_v1
-        # norm = 2561.048684459194 # 40twz_4,5lambda
+        # norm = 1902.762 # 30twz_6lambda
+        # norm = 1902.762 # 30twz_6lambda
+        # norm = 2400 # 22twz
+        # norm = 2100
+        # norm = 1638
+        # norm=norm_max
+        if norm > norm_max: raise Exception(f"Manual norm too high! Has to be lower than {norm_max} in wavefrom_base.py!!!")
         # norm = 2010.6261542521925 # 40twz_5,5lambda_v3
-        norm = 1853.1916706522684 #40twz_5lambda_v2
+        # norm = 1853.1916706522684 #40twz_5lambda_v2
+        # norm = 1500 #70twz_4 lambda only, is lower than 40 tweezers because of lockbox upper rail
         # norm = 1600 # test on 2/25/2024
         print(f'norm = {norm}')
         # print(f'max_val = {max_val}')

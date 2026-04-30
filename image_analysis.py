@@ -110,11 +110,11 @@ def roi_center(tweezer_freq):
     """
     ### weird drift ROI
     # center_x = round(2 * (0.020 * (tweezer_freq - 104)**2+ 26.6 * (tweezer_freq - 100) + 542)) / 2
-    center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 545)) / 2
-    center_y = round(2 * (-0.45 * (tweezer_freq - 100) + 69)) / 2
+    # center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 545)) / 2
+    # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 71)) / 2
     ### 30 tweezer eight lambda roi
-    # center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 541)) / 2
-    # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 72)) / 2
+    # center_x = round(2 * (0.020 * (tweezer_freq - 106)**2+ 26.6 * (tweezer_freq - 100) + 542)) / 2
+    # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 67)) / 2
     ### 50 tweezer four lambda roi
     # center_x = round(2 * (0.020 * (tweezer_freq - 104) ** 2 + 26.6 * (tweezer_freq - 100) + 443)) / 2
     # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 70)) / 2
@@ -125,6 +125,16 @@ def roi_center(tweezer_freq):
 
     # center_x = round(2 * (0.01 * (tweezer_freq - 108) ** 2 + 26.7 * (tweezer_freq - 100) + 445)) / 2
     # center_y = round(2 * (-0.4 * (tweezer_freq - 100) + 63)) / 2
+
+    # 40 tweezer six lambda roi
+    # center_x = round(2 * (0.020 * (tweezer_freq - 106) ** 2 + 26.6 * (tweezer_freq - 100 ) + 549)) / 2
+    # center_x = round(2 * (0.020 * (tweezer_freq - 106)**2+ 26.6 * (tweezer_freq - 100) + 540)) / 2
+    # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 66)) / 2
+    # return [center_x, center_y]
+
+    # 10.040 clock, 70 tweezer four lambda
+    center_x = round(2 * (0.020 * (tweezer_freq - 106) ** 2 + 26.6 * (tweezer_freq - 100) + 549)) / 2
+    center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 66)) / 2
     return [center_x, center_y]
 
 def roi_slice_func(tweezer_freq):
@@ -187,11 +197,11 @@ def analyze_image(array, tweezer_freq_list, num_tweezers):
     """
     counts_array = np.empty(num_tweezers)
     tweezer_freq_counter = 0
-    upper_threshold = 700
+    upper_threshold = 750 #750 #44200
     # background_counts = int(np.sum(array[roi_slice_func_background(tweezer_freq_list[20], 20)]))# + 250 #roi_area*91.01#105
     for tweezer_freq in tweezer_freq_list:
         counts_array[tweezer_freq_counter] = np.sum(
-            array[roi_slice_func(tweezer_freq)]) - int(np.sum(array[roi_slice_func_background(tweezer_freq, -roi_height-roi_height_bg)]))/roi_area_bg*roi_area # -background_counts
+            array[roi_slice_func(tweezer_freq)]) - int(np.sum(array[roi_slice_func_background(tweezer_freq, -roi_height-roi_height_bg*2)]))/roi_area_bg*roi_area # -background_counts
         tweezer_freq_counter += 1
     atom_count = 0
     empty_list = []
@@ -209,6 +219,10 @@ def analyze_image(array, tweezer_freq_list, num_tweezers):
     #         # delete i from empty_list:
     #         empty_list.remove(i)
     #         atom_count += 1
+    ########################################################
+
+    ######### Hack only, to not sort at all ##########
+    # empty_list = [0,69]
     ########################################################
 
     return atom_count, empty_list

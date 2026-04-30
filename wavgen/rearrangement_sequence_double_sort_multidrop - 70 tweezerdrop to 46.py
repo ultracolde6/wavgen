@@ -689,11 +689,11 @@ if __name__ == '__main__':
     #             ['46tweezers_sweep_to_5L_antinode.h5', '46tweezers_101.44center_5L_antinode.h5',
     #              '46tweezers_sweep_from_5L_antinode.h5']]
 
-    AXA_list = [['46tweezers_sweep_to_3.5L_antinode.h5', '46tweezers_101.44center_3.5L_antinode.h5',
-                     '46tweezers_sweep_from_3.5L_antinode.h5']]
+    # AXA_list = [['46tweezers_sweep_to_3.5L_antinode.h5', '46tweezers_101.44center_3.5L_antinode.h5',
+    #                  '46tweezers_sweep_from_3.5L_antinode.h5']]
 
-    # AXA_list = [['46tweezers_101.44center_4L.h5', '46tweezers_101.44center_4L.h5',
-    #              '46tweezers_101.44center_4L.h5']]
+    AXA_list = [['46tweezers_101.44center_4L.h5', '46tweezers_101.44center_4L.h5',
+                 '46tweezers_101.44center_4L.h5']]
 
     # AXA_list = [['40tweezers_sweep_to_halfint_node.h5', '40tweezers_101.44center_4.5L_node.h5',
     #              '40tweezers_sweep_from_halfint_node.h5']]
