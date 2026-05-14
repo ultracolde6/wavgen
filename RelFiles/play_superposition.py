@@ -20,10 +20,10 @@ if __name__=='__main__':
     # folder_name = 'EightLambda' ##thirty tweezers
     # folder_name = 'four lambda spacing - 70 tweezers'
     # folder_name = 'SixLambda-FortyTweezers'
-    folder_name = 'SixLambda-ThirtyTweezers'
+    # folder_name = 'SixLambda-ThirtyTweezers'
     # folder_name = '3andhalf lambda spacing'
     # folder_name = 'three lambda spacing'
-    # folder_name = 'waveforms_80_40Twz_5lambda_susc-meas' ## 2025 0723
+    folder_name = 'waveforms_80_40Twz_5lambda_susc-meas' ## 2025 0723
     # folder_name = 'jiggle_waveforms'
     # filename = Path(folder_name, 'jiggle_amp=400.0kHz_freq=64.0kHz.h5')
     # filename = Path(folder_name, 'drop_2_twz15,25_NPM_Power_Adjusted.h5')
@@ -51,13 +51,13 @@ if __name__=='__main__':
     # filename = Path(folder_name, '70tweezers_101.44center.h5')
     # filename = Path(folder_name, '50tweezers.h5')
     # filename = Path(folder_name, 'drop1_35.h5')
-    filename = Path(folder_name, 'static_new.h5')
+    # filename = Path(folder_name, 'static_new.h5')
     # filename = Path(folder_name, 'drop5_twz10,15,20,25,30_pwr_comp_V1.h5')
     # filename = Path(folder_name, 'static_20_center.h5')
     # filename = Path(folder_name, 'drop5_twz18,19,20,21,22.h5')
     # filename = Path(folder_name, 'static_5lambda_twogroup_node_Delta=0l.h5')
     # filename = Path(folder_name, 'static_104_single.h5')
-    # filename = Path(folder_name, 'static.h5')
+    filename = Path(folder_name, 'static.h5')
     if os.access(filename, os.F_OK):  # ...retrieve the Waveforms from file.
         print('Read file!')
         A = utilities.from_file_simple(filename, 'A')

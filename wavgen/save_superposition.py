@@ -17,15 +17,14 @@ from pathlib import Path
 if __name__ == '__main__':
     Lambda = 0.16E6
     for drop_num in [5]:
-        # bias=Lambda/fraction
         # bias=0
         # folder_name = 'EightLambda'
-        folder_name = 'SixLambda-ThirtyTweezers'
+        # folder_name = 'SixLambda-ThirtyTweezers'
         # folder_name = 'four lambda spacing - 70 tweezers'
         # folder_name = '3andhalf lambda spacing'
         # folder_name = 'SixLambda-FortyTweezers_411'
-        # folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
-        # filename = Path(folder_name, 'drop_5_twz21,22,23,24,25_NPM.h5')
+        folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
+        filename = Path(folder_name, 'drop5_twz10,15,20,25,30_pwr_even_c6.h5')
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
         # filename = Path(folder_name,'60tweezers.h5')
@@ -42,7 +41,7 @@ if __name__ == '__main__':
         # filename = Path(folder_name, 'static_5,5lambda_shifted_Lo4_short.h5')
         # filename = Path(folder_name, 'static.h5')
         # filename = Path(folder_name, 'static_eightlambda.h5')
-        filename = Path(folder_name, 'drop_16.h5')
+        # filename = Path(folder_name, 'drop_16.h5')
 
         # create a new folder for waveforms to be saved to, if it doesn't already exist
         new_path = Path(folder_name)
@@ -59,14 +58,14 @@ if __name__ == '__main__':
             A = utilities.from_file(filename, 'A')
         else:
             # ntraps = drop_num  # this is the num of tweezers we want
-            ntraps = 30  # this is the num of tweezers we want
+            ntraps = 5  # this is the num of tweezers we want
             # startfreq = 88E6
-            # CenterFreq = 104.0E6
-            CenterFreq = 101.44E6
+            CenterFreq = 104.0E6
+            # CenterFreq = 101.44E6
             # CenterFreq = 102.72E6
             # CenterFreq = 102.72E6
 
-            spacing_Lambda = 6
+            spacing_Lambda = 25
             shift_Lambda = 0# 0.25 #+ 1 / 16
             # stagger_Lambda = -1 / 128
             spacing = spacing_Lambda * Lambda  # 0.8E6
@@ -88,7 +87,7 @@ if __name__ == '__main__':
             # startfreq = 110*spacing -39950 # lambda/4 shifted
             # startfreq = 87.89E6
             # startfreq = 80.248E6
-            startfreq = CenterFreq - ntraps*spacing/2 # 86.4E6 + 0.04E6 #88.04E6
+            startfreq = 96.0E6#CenterFreq - ntraps*spacing/2 # 86.4E6 + 0.04E6 #88.04E6
 
             # freq_A = [startfreq + j*spacing + stagger*(-1)**(j+1) for j in range(ntraps)]
             # freq_A = [startfreq + com_shift + j * spacing for j in range(ntraps)]
@@ -147,16 +146,16 @@ if __name__ == '__main__':
             # print('Drop waveform frequencies:')
             # print(freq_A)
             magsA = np.zeros(ntraps)
-            magsA[16] = 1
+            # magsA[16] = 1
             # magsA[::3] = 0
             # for i in range(30,40):
             #     magsA[i] = 0
             # magsA = np.zeros(ntraps)
-            # magsA[0] = 1.005/1.07
-            # magsA[1] = 1.06/1.07
-            # magsA[2] = 0.96/1.07
-            # magsA[3] = 0.93/1.07
-            # magsA[4] = 1.03/1.07
+            magsA[0] = (0.93457+1)/2
+            magsA[1] = (0.99065+1)/2
+            magsA[2] = (0.89719+1+0.015)/2
+            magsA[3] = (0.86915+1)/2
+            magsA[4] = (0.96261+1+0.02)/2
             # for i in [42,50]:
             #     magsA[i] = 1
             # for i in range(19,20):

@@ -367,9 +367,9 @@ class Waveform:
         # norm = 3257.9421980055795 # 5lambda_v2
         # norm = 1722.857036876052 # 41twz_0,75MHz
         # norm = 2121.6211080626194 # 38twz_5lambda
-        # norm = 2213.5579202456956 #40twz_5lambda
+        norm = 2213.5579202456956 #40twz_5lambda
         # norm = 1508.686484148412
-        norm = 4000
+        # norm = 4000
         # norm = 2179.192717236717 # 30twz_5_lambda_v1
         # norm = 1902.762 # 30twz_6lambda
         # norm = 1902.762 # 30twz_6lambda
