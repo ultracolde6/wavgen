@@ -13,18 +13,17 @@ if __name__ == '__main__':
     # rc.wait_for_engines(n=24)
     # rc.ids
 
-    ntraps = 20  # this is the num of tweezers we want, plus 1
+
+    ntraps = 21  # this is the num of tweezers we want, plus 1
     # keep_num = 30
     # center_freq = 100.3E6
-    center_freq = 102.72E6
-    CenterFreq = 102.72E6
-
+    center_freq = 101.44E6
     # spacing = 0.639E6 # 4lambda
     # spacing = 0.882E6 # 5.5lambda
     # spacing = 0.799E6
     # spacing = 0.719E6
     Lambda = 0.16E6
-    spacing_Lambda = 18
+    spacing_Lambda = 12
     spacing = spacing_Lambda * Lambda
     # if keep_num % 2 == 0:
     #     startfreq = center_freq - round(spacing/2*10**(-6), 3)*10**6 - (keep_num/2 - 1 + ntraps - keep_num)*spacing
@@ -37,8 +36,8 @@ if __name__ == '__main__':
     # ind = 14
     # for sweep_mode in ["linear","shiftedlinear","cosine","shiftedcosine"]:
     for sweep_mode in ["cosine"]:
-        for sweep_time in [0.16]:
-            folder_name = 'EighteenLambda-NineteenTweezers'
+        for sweep_time in [0.24]:
+            folder_name = 'TwelveLambda-TwentyTweezers'
             # folder_name = f'waveforms_{int(sweep_time*1000)}_40Twz_5lambda_hysteresis'
 
             # create a new folder for waveforms to be saved to, if it doesn't already exist
@@ -136,7 +135,7 @@ if __name__ == '__main__':
 
                     ####################for L to R:########################
 
-                    startfreq = center_freq - (ntraps+1)/2 * spacing   # need to -spacing for L waveforms, don't for R waveforms
+                    startfreq = center_freq - (ntraps+1)/2 * spacing  # need to -spacing for L waveforms, don't for R waveforms
                     f_list = [startfreq + j * spacing for j in range(ntraps)]
                     for i in range(ntraps):
                         if i <= sweep_num:
@@ -215,7 +214,7 @@ if __name__ == '__main__':
             # print(32E6 / (times[5] - times[4]), " bytes/second")
             # print("Total time: ", times[-1] - times[0], " seconds")
     # print(max_list)
-    # print(f'optimal norm is {np.min(wavgen.constants.SAMP_VAL_MAX/np.array(max_list))}')
+    print(f'optimal norm is {np.min(wavgen.constants.SAMP_VAL_MAX/np.array(max_list))}')
 
     ## Plotting of our Waveforms for Validation ##
     # print(AB.SampleLength)

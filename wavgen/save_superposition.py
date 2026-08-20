@@ -19,12 +19,13 @@ if __name__ == '__main__':
     for drop_num in [5]:
         # bias=0
         # folder_name = 'EightLambda'
-        # folder_name = 'SixLambda-ThirtyTweezers'
+        # folder_name = 'TwelveLambda-TwentyfiveTweezers'
         # folder_name = 'four lambda spacing - 70 tweezers'
+        # folder_name = 'Centered_uneven_4lambda_spacing_2centered_4lambda'
         # folder_name = '3andhalf lambda spacing'
-        # folder_name = 'SixLambda-FortyTweezers_411'
-        folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
-        filename = Path(folder_name, 'drop5_twz10,15,20,25,30_pwr_even_c6.h5')
+        folder_name = 'FourPtFiveLambda-25Tweezers'
+        # folder_name = 'waveforms_80_40Twz_5lambda_susc-meas'
+        # filename = Path(folder_name, 'static.h5')
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
         # filename = Path(folder_name, f'static_half-shifted_Lo2_dualbias_Lo{fraction}.h5')
         # filename = Path(folder_name,'60tweezers.h5')
@@ -39,9 +40,9 @@ if __name__ == '__main__':
         # filename = Path(folder_name, f'40tweezers_101.44center_4L_antinode_rydberg.h5')
         # filename = Path(folder_name, f'40tweezers_101.44center_blockade_4L_wide_v2.h5')
         # filename = Path(folder_name, 'static_5,5lambda_shifted_Lo4_short.h5')
-        # filename = Path(folder_name, 'static.h5')
+        filename = Path(folder_name, 'drop2_twz12,13_short.h5')
         # filename = Path(folder_name, 'static_eightlambda.h5')
-        # filename = Path(folder_name, 'drop_16.h5')
+        # filename = Path(folder_name, 'drop_2.h5')
 
         # create a new folder for waveforms to be saved to, if it doesn't already exist
         new_path = Path(folder_name)
@@ -58,22 +59,25 @@ if __name__ == '__main__':
             A = utilities.from_file(filename, 'A')
         else:
             # ntraps = drop_num  # this is the num of tweezers we want
-            ntraps = 5  # this is the num of tweezers we want
+            ntraps = 2  # this is the num of tweezers we want
             # startfreq = 88E6
-            CenterFreq = 104.0E6
-            # CenterFreq = 101.44E6
+            # CenterFreq = 104.0E6
+            CenterFreq = 101.44E6
             # CenterFreq = 102.72E6
             # CenterFreq = 102.72E6
 
-            spacing_Lambda = 25
+            spacing_Lambda = 4.5
             shift_Lambda = 0# 0.25 #+ 1 / 16
             # stagger_Lambda = -1 / 128
             spacing = spacing_Lambda * Lambda  # 0.8E6
             shift = shift_Lambda * Lambda  # 0.8E6
             # stagger = stagger_Lambda * Lambda  # 0.8E6
             # startfreq = CenterFreq - 20 * spacing
-            # startfreq = CenterFreq - (ntraps//2) * spacing
-            # startfreq=88E6
+            # startfreq = 87.04E6 #CenterFreq - (ntraps//2) * spacing
+            # startfreq= CenterFreq - int(ntraps/2)*spacing #80E6
+            startfreq = CenterFreq - int( ntraps-1 )/2 * spacing
+            # startfreq = CenterFreq - ntraps * spacing / 2  # 86.4E6 + 0.04E6 #88.04E6
+
             com_shift = 0*Lambda/4
             center_bias = 0*Lambda/16
 
@@ -87,18 +91,55 @@ if __name__ == '__main__':
             # startfreq = 110*spacing -39950 # lambda/4 shifted
             # startfreq = 87.89E6
             # startfreq = 80.248E6
-            startfreq = 96.0E6#CenterFreq - ntraps*spacing/2 # 86.4E6 + 0.04E6 #88.04E6
+            # startfreq = CenterFreq - ntraps*spacing/2 # 86.4E6 + 0.04E6 #88.04E6
 
             # freq_A = [startfreq + j*spacing + stagger*(-1)**(j+1) for j in range(ntraps)]
             # freq_A = [startfreq + com_shift + j * spacing for j in range(ntraps)]
+            freq_A = [101.44E6, 102.16E6]
             # freq_A = np.array([startfreq +shift +  j * spacing for j in range(ntraps)])
-            freq_A = np.array([startfreq +shift +  j * spacing for j in range(ntraps)])
-            # freq_A[0] = freq_A[0] - (3.3)*Lambda
-            # freq_A[1] = freq_A[1] - 0 * Lambda
-            # freq_A[3] = freq_A[3] - 0 * Lambda
-            # freq_A[4] = freq_A[4] - (3.3)* Lambda
-            # nonlinear_factor = -1.28E3
-            # freq_A += nonlinear_factor * np.array([(j-30)*(j-29)/2 for j in range(ntraps)])
+            # freq_A = np.array([99520000,10048000,101.44E6,102.4E6])
+            ### FOR UNEVEN SPACING ### 4 and 16 lambda, 23 tweezers, ntraps=43
+            # freq_temp = np.array([startfreq +shift +  j * spacing for j in range(ntraps)])
+            # mask_freqs = np.ones(len(freq_temp))
+            # mask_freqs[10:17] = 0
+            # mask_freqs[18:21] = 0
+            # mask_freqs[22:25] = 0
+            # mask_freqs[26:33] = 0
+
+            ### FOR UNEVEN SPACING ### 4 and 12 lambda, 25 tweezers, ntraps=65
+            # freq_temp = np.array([startfreq +shift +  j * spacing for j in range(ntraps)]) # set ntraps=65 for the uneven spacing version
+            # mask_freqs = np.ones(len(freq_temp))
+            # mask_freqs[11:29] = 0
+            # mask_freqs[30:32] = 0
+            # mask_freqs[33:35] = 0
+            # mask_freqs[36:54] = 0
+            # #
+            # mask_freqs_bool = mask_freqs > 0.1
+            # freq_A = freq_temp[mask_freqs_bool]
+            # ntraps = len(freq_A)  # num tweezers we want
+
+            ### FOR UNEVEN SPACING ### 4 and 12 lambda, 24 tweezers, ntraps=65, 2 centered 12lambda
+            # freq_temp = np.array([startfreq +shift +  j * spacing for j in range(ntraps)]) # set ntraps=65 for the uneven spacing version
+            # mask_freqs = np.ones(len(freq_temp))
+            # mask_freqs[11:32] = 0
+            # mask_freqs[33:35] = 0
+            # mask_freqs[36:54] = 0
+            # #
+            # mask_freqs_bool = mask_freqs > 0.1
+            # freq_A = freq_temp[mask_freqs_bool]
+            # ntraps = len(freq_A)  # num tweezers we want
+
+            ### FOR UNEVEN SPACING ### 4 and 12 lambda, 24 tweezers, ntraps=65, 2 centered 4lambda
+            # freq_temp = np.array([startfreq + shift + j * spacing for j in
+            #                       range(ntraps)])  # set ntraps=65 for the uneven spacing version
+            # mask_freqs = np.ones(len(freq_temp))
+            # mask_freqs[12:32] = 0
+            # mask_freqs[34:54] = 0
+            # #
+            # mask_freqs_bool = mask_freqs > 0.1
+            # freq_A = freq_temp[mask_freqs_bool]
+            # ntraps = len(freq_A)  # num tweezers we want
+
 
             # freq_A = []
             # for i in range(int(ntraps/2)):
@@ -145,17 +186,22 @@ if __name__ == '__main__':
             #         freq_A.append(f_list[i] + shift_1)
             # print('Drop waveform frequencies:')
             # print(freq_A)
-            magsA = np.zeros(ntraps)
+            magsA = np.ones(ntraps)
+            # magsA[10:17]=0
+            # magsA[18:21]=0
+            # magsA[22:25]=0
+            # magsA[26:33] = 0
+
             # magsA[16] = 1
             # magsA[::3] = 0
             # for i in range(30,40):
             #     magsA[i] = 0
             # magsA = np.zeros(ntraps)
-            magsA[0] = (0.93457+1)/2
-            magsA[1] = (0.99065+1)/2
-            magsA[2] = (0.89719+1+0.015)/2
-            magsA[3] = (0.86915+1)/2
-            magsA[4] = (0.96261+1+0.02)/2
+            # magsA[14] = 1
+            # magsA[15] = 1
+            # magsA[2] = (0.89719+1+0.015)/2
+            # magsA[3] = (0.86915+1)/2
+            # magsA[4] = (0.96261+1+0.02)/2
             # for i in [42,50]:
             #     magsA[i] = 1
             # for i in range(19,20):
@@ -170,6 +216,9 @@ if __name__ == '__main__':
 
             phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
             phasesA = np.cumsum(phase_diff)
+            # rng=np.random.default_rng(seed=2)
+            # phasesA = rng.random(ntraps)*2*np.pi
+            # phasesA=[14.2996,19.7162,25.99939,33.1492,41.1657]
             # phase_diff_temp_5 = np.arange(5) / (5 - 1) * 2 * np.pi
             # phases_temp_5 = np.cumsum(phase_diff_temp_5)
             # phasesA= phases_temp_5

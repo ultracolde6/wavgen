@@ -132,9 +132,30 @@ def roi_center(tweezer_freq):
     # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 66)) / 2
     # return [center_x, center_y]
 
-    # 10.040 clock, 70 tweezer four lambda
-    center_x = round(2 * (0.020 * (tweezer_freq - 106) ** 2 + 26.6 * (tweezer_freq - 100) + 549)) / 2
-    center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 66)) / 2
+    # 10.040 clock, 70 tweezer four lambda, eight lambda, six lambda Rydberg
+    # center_x = round(2 * (0.020 * (tweezer_freq - 106) ** 2 + 26.6 * (tweezer_freq - 100) + 548)) / 2
+    # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 66)) / 2
+    # return [center_x, center_y]
+
+    # 10.040 clock, ten lambda Rydberg n=50
+    # center_x = round(2 * (0.020 * (tweezer_freq - 106) ** 2 + 26.6 * (tweezer_freq - 100) + 545)) / 2
+    # center_y = round(2 * (-0.5 * (tweezer_freq - 100) + 64)) / 2
+    # return [center_x, center_y]
+
+    # # 07/01/2026, after moving fourier plane position
+    # center_x = round(2 * (0.020 * (tweezer_freq - 106) ** 2 + 26.6 * (tweezer_freq - 100) + 553)) / 2
+    # center_y = round(2 * (-0.3 * (tweezer_freq - 100) + 60)) / 2
+    # return [center_x, center_y]
+
+    # 07/10/2026, after expanding jkam AOI
+    # center_x = round(2 * (0.020 * (tweezer_freq - 106) ** 2 + 26.6 * (tweezer_freq - 100) + 826)) / 2
+    # center_y = round(2 * (-0.3 * (tweezer_freq - 100) + 59)) / 2
+    # return [center_x, center_y]
+
+
+    # 08/19 we chose a weird starting frequency for 4.5 lambda spacing
+    center_x = round(2 * (0.020 * (tweezer_freq - 106)**2+ 26.6 * (tweezer_freq - 100) + 841)) / 2
+    center_y = round(2 * (-0.3 * (tweezer_freq - 100) + 59)) / 2
     return [center_x, center_y]
 
 def roi_slice_func(tweezer_freq):
@@ -197,7 +218,8 @@ def analyze_image(array, tweezer_freq_list, num_tweezers):
     """
     counts_array = np.empty(num_tweezers)
     tweezer_freq_counter = 0
-    upper_threshold = 750 #750 #44200
+    # upper_threshold = 750 #750 #44200 200ms
+    upper_threshold = 420 # 100ms exposure
     # background_counts = int(np.sum(array[roi_slice_func_background(tweezer_freq_list[20], 20)]))# + 250 #roi_area*91.01#105
     for tweezer_freq in tweezer_freq_list:
         counts_array[tweezer_freq_counter] = np.sum(

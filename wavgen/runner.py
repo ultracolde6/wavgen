@@ -41,7 +41,10 @@ while True:
     try:
         print("Starting rearrangement sequence...")
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop.py"])
-        process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop_mcm.py"])
+        # process = subprocess.Popen([sys.executable, "rearrangement_double_sort_multidrop_dropsingle.py"])
+        process = subprocess.Popen([sys.executable, "rearrangement_double_sort_multidrop_dropdoublev2.py"])
+        # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop.py"])
+        # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop_mcm.py"])
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop - 70 tweezerdrop to 40.py"]) # Used for MW/Chi measurement.
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop - 70 tweezerdrop to 40 new.py"])
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop - 70 tweezer.py"])
@@ -51,7 +54,10 @@ while True:
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_loop_frames-70-downto-40_perp_contrast.py"])   # use for free space perp contrast run
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_loop_frames-downto-40_101.44.py"])   # use for spins as of 3/12/26
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_loop_frames-downto-40_101.44_v2.py"]) # use for spins as of 1/13/26
-        # process = subprocess.Popen([sys.executable, "rearrangement_sequence_loop_frames_rydberg.py"]) # use for multi-loop Rydberg and uw spectroscopy as of 1/14/26
+        # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop.py"]) # use for multi-loop Rydberg and uw spectroscopy as of 1/14/26
+        # process = subprocess.Popen([sys.executable, "rearrangement_sequence_loop_frames_rydberg_add_loading_sweep_v2.py"]) # use for multi-loop Rydberg with sweep to larger spacing 7/10/26
+        # process = subprocess.Popen([sys.executable, "rearrangement_sequence_loop_frames_rydberg_centergroup_sidereservoir.py"]) # use for multi-loop Rydberg with sweep to larger spacing 7/10/26
+
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_loop_frames_rydberg_blockade_v2.py"])  # use for multi-loop Rydberg blockaded Rabi
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop_blockade.py"]) # use for multi-loop Rydberg and uw spectroscopy as of 1/14/26
         # process = subprocess.Popen([sys.executable, "rearrangement_sequence_double_sort_multidrop - 40 tweezerdrop to 22.py"])

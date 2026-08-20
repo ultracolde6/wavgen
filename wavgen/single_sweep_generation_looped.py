@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
 
 
-    ntraps = 40
+    ntraps = 30
     Lambda = 0.16E6
     CenterFreq =104E6
     sweeptime_ms = 0.16

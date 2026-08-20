@@ -17,10 +17,18 @@ import matplotlib.pyplot as plt
 
 
 if __name__=='__main__':
-    # folder_name = 'EightLambda' ##thirty tweezers
+    # folder_name = 'EightLambda-ThirtyTweezers' ##thirty tweezers
+    # folder_name = 'TenLambda-ThirtyTweezers'
+    # folder_name = 'TwelveLambda-TwentyfiveTweezers'
+    # folder_name = 'SixteenLambda-TwentyfiveTweezers'
+    # folder_name = 'Centered_Uneven_16and4lambda-TwentyFourTweezers'
+    # folder_name = 'EighteenLambda-NineteenTweezers'
+
+    # folder_name = 'TwelveLambda-ThirtyTweezers'
     # folder_name = 'four lambda spacing - 70 tweezers'
     # folder_name = 'SixLambda-FortyTweezers'
-    folder_name = 'SixLambda-ThirtyTweezers'
+    # folder_name = 'SixLambda-ThirtyTweezers'
+    folder_name = 'FourPtFiveLambda-25Tweezers'
     # folder_name = '3andhalf lambda spacing'
     # folder_name = 'three lambda spacing'
     # folder_name = 'waveforms_80_40Twz_5lambda_susc-meas' ## 2025 0723
@@ -51,7 +59,10 @@ if __name__=='__main__':
     # filename = Path(folder_name, '70tweezers_101.44center.h5')
     # filename = Path(folder_name, '50tweezers.h5')
     # filename = Path(folder_name, 'drop1_35.h5')
-    filename = Path(folder_name, 'static_new.h5')
+    filename = Path(folder_name, 'static.h5')
+    # filename = Path(folder_name, 'static_30twz.h5')
+    # filename = Path(folder_name, 'static_new.h5')
+
     # filename = Path(folder_name, 'drop5_twz10,15,20,25,30_pwr_comp_V1.h5')
     # filename = Path(folder_name, 'static_20_center.h5')
     # filename = Path(folder_name, 'drop5_twz18,19,20,21,22.h5')

@@ -445,14 +445,15 @@ class TestEventHandler(PatternMatchingEventHandler):
                     lStep = 2 * num_tweezers + 21
                     print(f"####################{self.drop_counter}###################")
                     llSegment = 2 * num_tweezers - 1 + self.drop_counter  # the drop waveform
-                    llLoop = int(5 * 0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated once
+                    llLoop = int(0.001 * SAMP_FREQ / wf_list[llSegment].SampleLength)  # pattern repeated once
+                    # print(SAMP_FREQ)
                     llNext = 2 * num_tweezers + 100  # 0  # next step is 0
                     llCondition = SPCSEQ_ENDLOOPALWAYS  # unconditionally leave current step
                     tic1 = time.perf_counter()
                     # print('2nd trig')
                     llValue = (llCondition << 32) | (llLoop << 32) | (llNext << 16) | (llSegment)
                     spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
-                    print('start of axa')
+                    # print('start of axa')
 
                     ##################### Start of AXA ############################
                     if multi_trig == True:
@@ -536,8 +537,8 @@ class TestEventHandler(PatternMatchingEventHandler):
                             spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
                             lStep=2 * num_tweezers + 101
-                            llSegment = 2 * num_tweezers - 1 + len(drop_list) + len(flattened_AXA_list)   # sweep
-                            llLoop = 1
+                            llSegment = 2 * num_tweezers - 1 + len(drop_list) + len(flattened_AXA_list)   # drop to 1 twz
+                            llLoop = 2
                             llNext = 2 * num_tweezers + 102
                             llCondition = SPCSEQ_ENDLOOPALWAYS
                             # print(f'{loop_num + 3}th trig')
@@ -562,7 +563,7 @@ class TestEventHandler(PatternMatchingEventHandler):
                             spcm_dwSetParam_i64(hCard, SPC_SEQMODE_STEPMEM0 + lStep, int64(llValue))
 
 
-                else:
+                else: #if no atom is loaded
                     lStep = 1  # current step is step 1
 
                     llSegment = 2*num_tweezers-1 + self.drop_counter #2*num_tweezers - 2   # drop
@@ -870,7 +871,7 @@ if __name__ == '__main__':
 
     # 4.5 lambda 25 tweezers
     spacing = 0.16*4.5
-    startfreq = 92.8
+    startfreq = 92.4
     ntraps = 25
     path_folder = 'FourPtFiveLambda-25Tweezers'
 
@@ -884,62 +885,7 @@ if __name__ == '__main__':
     # ]
     # AXA_list = [['40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5','40tweezers_101.44center_4L.h5']]
     AXA_list = [['static.h5', 'static.h5', 'static.h5']]
-    # AXA_list = [['static_new.h5', 'static_new.h5', 'static_new.h5']]
-    # AXA_list = [['50tweezers.h5','50tweezers.h5','50tweezers.h5']]
-    # AXA_list = [
-    #     ['sweep_5to5,5lambda.h5', 'static_5,5lambda_antinode.h5',
-    #      'sweep_5,5to5lambda.h5']
-    # ]
 
-    # 5.5 lambda node spock
-    # AXA_list = [
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.075l.h5', 'static_5,5lambda_Spock_node_Delta=-0.075l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.075l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.05l.h5', 'static_5,5lambda_Spock_node_Delta=-0.05l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.05l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.0375l.h5', 'static_5,5lambda_Spock_node_Delta=-0.0375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.0375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.025l.h5', 'static_5,5lambda_Spock_node_Delta=-0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.025l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=-0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.025l.h5', 'static_5,5lambda_Spock_node_Delta=0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.025l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.0375l.h5', 'static_5,5lambda_Spock_node_Delta=0.0375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.0375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.05l.h5', 'static_5,5lambda_Spock_node_Delta=0.05l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.05l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.075l.h5', 'static_5,5lambda_Spock_node_Delta=0.075l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.075l.h5']
-    #             ]
-
-    # AXA_list = [
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.025l.h5', 'static_5,5lambda_Spock_node_Delta=-0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.025l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=-0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.009375l.h5', 'static_5,5lambda_Spock_node_Delta=-0.009375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.009375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.00625l.h5', 'static_5,5lambda_Spock_node_Delta=-0.00625l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.00625l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=-0.003125l.h5', 'static_5,5lambda_Spock_node_Delta=-0.003125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=-0.003125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0l.h5', 'static_5,5lambda_Spock_node_Delta=0l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.003125l.h5', 'static_5,5lambda_Spock_node_Delta=0.003125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.003125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.00625l.h5', 'static_5,5lambda_Spock_node_Delta=0.00625l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.00625l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.009375l.h5', 'static_5,5lambda_Spock_node_Delta=0.009375l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.009375l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.0125l.h5', 'static_5,5lambda_Spock_node_Delta=0.0125l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.0125l.h5'],
-    #     ['sweep_to_5,5lambda_Spock_node_Delta=0.025l.h5', 'static_5,5lambda_Spock_node_Delta=0.025l.h5',
-    #      'sweep_from_5,5lambda_Spock_node_Delta=0.025l.h5'],
     # ]
 
     # AXA_list = [
@@ -1032,19 +978,18 @@ if __name__ == '__main__':
     # drop_list = ['drop_1_twz20.h5']
     # drop_list = ['drop15.h5']
     # drop_list = ['drop1_20.h5']
-    # drop_list = ['static.h5']
+    drop_list = ['drop2_twz12,13.h5'] # single
+    # drop_list = ['drop5_twz11,13,15,17,19.h5']
     # drop_list = ['40tweezers_101.44center_blockade_drop_4L.h5']
     # drop_list = ['drop_22.h5','drop_1_twz20.h5']
     # drop_list = ['drop_1_twz5.h5', 'drop_1_twz8.h5', 'drop_1_twz14.h5', 'drop_1_twz20.h5', 'drop_1_twz26.h5', 'drop_1_twz30.h5']
     # sweep_droplist = ['sweep_to_twz10,15,20,25,30.h5', 'drop5_twz10,15,20,25,30.h5']
-    # sweep_droplist = ['drop5_twz18,19,20,21,22.h5','drop5_twz18,19,20,21,22.h5']
-    sweep_droplist=['static.h5']
+    # sweep_droplist = ['sweep_6lambda_to_4,5lambda_2twz.h5','static_4,5lambda.h5']
+    sweep_droplist=['drop2_twz12,13.h5','static.h5']
     # sweep_droplist=['static_new.h5']
     # drop_list = ['40tweezers_101.44center_4L.h5']
     # drop_list= ['drop1_35.h5']
     # drop_list = ['drop_15.h5']
-    drop_list = ['static.h5']
-    # drop_list = ['drop5_twz13,14,15,16,17.h5']
     # sweep_droplist = ['40tweezers_101.44center_4L.h5']
     N_cycle = np.lcm(len(AXA_list),len(drop_list))
     # static_list =
@@ -1091,14 +1036,15 @@ if __name__ == '__main__':
     #     log_file.write(log_entry_init)
 
     #################### include sorting waveforms ########################
-    sort_list_L = [f'sweep_{num}.h5' for num in range(1, ntraps)]
-    sort_list_R = [f'sweep_{num}R.h5' for num in range(1, ntraps)]
+    # sort_list_L = [f'sweep_{num}.h5' for num in range(1, ntraps)]
+    # sort_list_R = [f'sweep_{num}R.h5' for num in range(1, ntraps)]
+
     # sort_list_L = [f'sweep30tweezersnew_{num}.h5' for num in range(1, ntraps)]
     # sort_list_R = [f'sweep30tweezersnew_{num}R.h5' for num in range(1, ntraps)]
     # sort_list_L = [f'sweep40tweezers_{num}.h5' for num in range(1, ntraps)]
     # sort_list_R = [f'sweep40tweezers_{num}R.h5' for num in range(1, ntraps)]
-    # sort_list_L = ['static.h5' for num in range(1, ntraps)]
-    # sort_list_R = ['static.h5' for num in range(1, ntraps)]
+    sort_list_L = ['static.h5' for num in range(1, ntraps)]
+    sort_list_R = ['static.h5' for num in range(1, ntraps)]
     sort_list = np.concatenate((sort_list_L, sort_list_R))
     # print('buffer index:', 1+len(sort_list)+len(drop_list)+len(flattened_AXA_list)+len(sweep_droplist))
     # print('sort list size',len(sort_list))
@@ -1110,7 +1056,8 @@ if __name__ == '__main__':
     for filename in sort_list:
         if os.access(Path(path_folder, filename), os.F_OK):  # ...retrieve the Waveforms from file.
             # print("Path =", Path(path_folder, filename))
-            wav_temp=utilities.from_file(Path(path_folder, filename), 'AB')
+            # wav_temp=utilities.from_file(Path(path_folder, filename), 'AB')
+            wav_temp = utilities.from_file(Path(path_folder, filename), 'A')
             wf_list.append(wav_temp)
             # print("#########################")
             # print(f"filename={filename} ,  samplelength={wav_temp.SampleLength}")
@@ -1273,7 +1220,7 @@ if __name__ == '__main__':
 
 
     ##################################################################################################################
-    setup_channels(amplitude=120, use_filter=False)
+    setup_channels(amplitude=150, use_filter=False)
     _setup_clock()
     start_step = 0
     # step tells us which segment to loop for how many times, and what the next step is

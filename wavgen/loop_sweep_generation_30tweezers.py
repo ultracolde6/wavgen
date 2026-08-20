@@ -13,17 +13,19 @@ if __name__ == '__main__':
     # rc.wait_for_engines(n=24)
     # rc.ids
 
-
-    ntraps = 41  # this is the num of tweezers we want, plus 1
+    # ntraps_temp= # new for uneven spacing sweeps
+    ntraps = 26  # this is the num of tweezers we want, plus 1
     # keep_num = 30
     # center_freq = 100.3E6
     center_freq = 101.44E6
+    CenterFreq = 101.44E6
+
     # spacing = 0.639E6 # 4lambda
     # spacing = 0.882E6 # 5.5lambda
     # spacing = 0.799E6
     # spacing = 0.719E6
     Lambda = 0.16E6
-    spacing_Lambda = 6
+    spacing_Lambda = 4.5
     spacing = spacing_Lambda * Lambda
     # if keep_num % 2 == 0:
     #     startfreq = center_freq - round(spacing/2*10**(-6), 3)*10**6 - (keep_num/2 - 1 + ntraps - keep_num)*spacing
@@ -33,11 +35,26 @@ if __name__ == '__main__':
     # startfreq = 80.248E6 - spacing # the first tweezer in the wanted array minus 1 tweezer spacing for the extra moving tweezer
     # startfreq = 88E6 - spacing # need to -spacing for L waveforms, don't for R waveforms
 
-    # ind = 14
-    # for sweep_mode in ["linear","shiftedlinear","cosine","shiftedcosine"]:
+
+    startfreq = CenterFreq - ntraps * spacing / 2  # 86.4E6 + 0.04E6 #88.04E6
+
+    # freq_A = [startfreq + j*spacing + stagger*(-1)**(j+1) for j in range(ntraps)]
+    # freq_A = [startfreq + com_shift + j * spacing for j in range(ntraps)]
+    # freq_A = np.array([startfreq +shift +  j * spacing for j in range(ntraps)])
+    freq_A = np.array([startfreq + j * spacing for j in range(ntraps)])    # for sweep_mode in ["linear","shiftedlinear","cosine","shiftedcosine"]:
+    mask_freqs = np.ones(len(freq_A))
+    # mask_freqs[10:17] = 0
+    # mask_freqs[18:21] = 0
+    # mask_freqs[22:25] = 0
+    # mask_freqs[26:33] = 0
+
+    mask_freqs_bool = mask_freqs>0.1
+    # f_list_uneven = freq_A[mask_freqs_bool]
+    # ntraps=len(f_list_uneven)+1 # num tweezers we want +1
+
     for sweep_mode in ["cosine"]:
-        for sweep_time in [0.16]:
-            folder_name = 'SixLambda-FortyTweezers_411'
+        for sweep_time in [0.24]:
+            folder_name = 'FourPtFiveLambda-25Tweezers'
             # folder_name = f'waveforms_{int(sweep_time*1000)}_40Twz_5lambda_hysteresis'
 
             # create a new folder for waveforms to be saved to, if it doesn't already exist
@@ -52,7 +69,7 @@ if __name__ == '__main__':
             # for sweep_num in np.arange(ntraps-2)+1:
             # max_list = []
             for sweep_num in np.arange(ntraps-2)+1:
-                name_temp = 'sweep40tweezersnew_{}R.h5'.format(sweep_num)
+                name_temp = 'sweep_{}R.h5'.format(sweep_num)
                 filename = Path(folder_name, name_temp)
                 # If we have already computed the Waveforms...
                 # if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.
@@ -75,6 +92,8 @@ if __name__ == '__main__':
                     #
                     startfreq = center_freq - (ntraps-1)/2 * spacing  # need to -spacing for L waveforms, don't for R waveforms (0.64 lambda spacing, 101.44 center frequency)
                     f_list = [startfreq + j * spacing for j in range(ntraps)]
+                    ##### NEW for uneven spacing ###############
+                    # f_list = np.concatenate([f_list_uneven, [f_list_uneven[-1]+spacing]])
 
                     for i in range(ntraps):
                         if i < ntraps - 2 - sweep_num:
@@ -110,11 +129,8 @@ if __name__ == '__main__':
                     # print(AB.sample_length)
                     print("######################")
 
-
-
-
             for sweep_num in np.arange(ntraps - 2) + 1:
-                name_temp = 'sweep40tweezersnew_{}.h5'.format(sweep_num)
+                name_temp = 'sweep_{}.h5'.format(sweep_num)
                 filename = Path(folder_name, name_temp)
                 # If we have already computed the Waveforms...
                 # if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.
@@ -137,6 +153,8 @@ if __name__ == '__main__':
 
                     startfreq = center_freq - (ntraps+1)/2 * spacing  # need to -spacing for L waveforms, don't for R waveforms
                     f_list = [startfreq + j * spacing for j in range(ntraps)]
+                    ##### NEW for uneven spacing ###############
+                    # f_list = np.concatenate([[f_list_uneven[0] - spacing], f_list_uneven])
                     for i in range(ntraps):
                         if i <= sweep_num:
                             freq_A.append(f_list[i])

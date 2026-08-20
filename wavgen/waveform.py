@@ -95,6 +95,8 @@ class Superposition(Waveform):
             #     """
             # print(lcm)
             # sample_length = (SAMP_FREQ / 10**lcm) * 32 * REPEAT
+            print('sample freq',SAMP_FREQ)
+            print('repeat',REPEAT)
             gcd = np.gcd.reduce(np.array(freqs, dtype=int))
             # sample_length = 32*Fraction(SAMP_FREQ*REPEAT, gcd).numerator
             sample_length = Fraction(SAMP_FREQ*REPEAT, gcd).numerator

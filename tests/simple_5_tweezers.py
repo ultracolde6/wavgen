@@ -100,7 +100,7 @@ if __name__=='__main__':
 
     # phasesA = np.array([-np.pi/2,0,-np.pi/2])
 
-    startfreq = 88E6
+    startfreq = 100E6
 
     # startfreq = 99.9E6 #80.248E6 + 0.798E6*10 # 99E6
     # centerfreq= 100E6
@@ -177,12 +177,13 @@ if __name__=='__main__':
     # phasesA = utilities.rp[:len(freq_A)]
     # print('used random phase here:')
     # print(repr(phasesA))
+    freq_A=[90E6]
     ntraps=len(freq_A)
-    phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
-    all_40_diff = np.arange(40) / (40 - 1)*2*np.pi
-    all_phases = np.cumsum(all_40_diff)
-    phasesB = all_phases[:6]
-    phasesA = np.cumsum(phase_diff)
+    # phase_diff = np.arange(ntraps) / (ntraps - 1) * 2 * np.pi
+    # all_40_diff = np.arange(40) / (40 - 1)*2*np.pi
+    # all_phases = np.cumsum(all_40_diff)
+    # phasesB = all_phases[:6]
+    # phasesA = np.cumsum(phase_diff)
     phasesA=[0]
     print('Twz frequencies:')
     print(np.array(freq_A)/1E6)
@@ -211,7 +212,7 @@ if __name__=='__main__':
     # A.plot()
     # plt.show()
     dwCard = wavgen.Card()
-    dwCard.setup_channels(amplitude = 150, use_filter=False)
+    dwCard.setup_channels(amplitude = 80, use_filter=False)
 
     # dwCard.stabilize_intensity(A,which_cam=0)
 
