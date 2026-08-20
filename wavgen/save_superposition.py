@@ -40,8 +40,8 @@ if __name__ == '__main__':
         # filename = Path(folder_name, f'40tweezers_101.44center_4L_antinode_rydberg.h5')
         # filename = Path(folder_name, f'40tweezers_101.44center_blockade_4L_wide_v2.h5')
         # filename = Path(folder_name, 'static_5,5lambda_shifted_Lo4_short.h5')
-        filename = Path(folder_name, 'drop2_twz12,13_short.h5')
-        # filename = Path(folder_name, 'static_eightlambda.h5')
+        # filename = Path(folder_name, 'drop2_twz12,13_short.h5')
+        filename = Path(folder_name, 'static.h5')
         # filename = Path(folder_name, 'drop_2.h5')
 
         # create a new folder for waveforms to be saved to, if it doesn't already exist
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             A = utilities.from_file(filename, 'A')
         else:
             # ntraps = drop_num  # this is the num of tweezers we want
-            ntraps = 2  # this is the num of tweezers we want
+            ntraps = 25  # this is the num of tweezers we want
             # startfreq = 88E6
             # CenterFreq = 104.0E6
             CenterFreq = 101.44E6
@@ -75,8 +75,8 @@ if __name__ == '__main__':
             # startfreq = CenterFreq - 20 * spacing
             # startfreq = 87.04E6 #CenterFreq - (ntraps//2) * spacing
             # startfreq= CenterFreq - int(ntraps/2)*spacing #80E6
-            startfreq = CenterFreq - int( ntraps-1 )/2 * spacing
-            # startfreq = CenterFreq - ntraps * spacing / 2  # 86.4E6 + 0.04E6 #88.04E6
+            # startfreq = CenterFreq - int( ntraps-1 )/2 * spacing
+            startfreq = CenterFreq - ntraps * spacing / 2  # 86.4E6 + 0.04E6 #88.04E6
 
             com_shift = 0*Lambda/4
             center_bias = 0*Lambda/16
@@ -94,8 +94,8 @@ if __name__ == '__main__':
             # startfreq = CenterFreq - ntraps*spacing/2 # 86.4E6 + 0.04E6 #88.04E6
 
             # freq_A = [startfreq + j*spacing + stagger*(-1)**(j+1) for j in range(ntraps)]
-            # freq_A = [startfreq + com_shift + j * spacing for j in range(ntraps)]
-            freq_A = [101.44E6, 102.16E6]
+            freq_A = [startfreq + com_shift + j * spacing for j in range(ntraps)]
+            # freq_A = [101.44E6, 102.16E6]
             # freq_A = np.array([startfreq +shift +  j * spacing for j in range(ntraps)])
             # freq_A = np.array([99520000,10048000,101.44E6,102.4E6])
             ### FOR UNEVEN SPACING ### 4 and 16 lambda, 23 tweezers, ntraps=43

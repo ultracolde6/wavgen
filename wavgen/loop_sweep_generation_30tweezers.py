@@ -132,7 +132,6 @@ if __name__ == '__main__':
             for sweep_num in np.arange(ntraps - 2) + 1:
                 name_temp = 'sweep_{}.h5'.format(sweep_num)
                 filename = Path(folder_name, name_temp)
-                # If we have already computed the Waveforms...
                 # if os.access(filename + '.h5', os.F_OK):  # ...retrieve the Waveforms from file.
                 if os.access(filename, os.F_OK):  # ...retrieve the Waveforms from file.
 
