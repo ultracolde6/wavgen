@@ -10,7 +10,7 @@ docs/sphinx/*
 !docs/sphinx/source/
 lextab.py
 yacctab.py
-
+*.zip
 # Virtual Environment
 venv/
 env/
